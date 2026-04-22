@@ -1,10 +1,12 @@
 import { TopBar, IconBtn, icons } from '../components/TopBar.jsx';
+import { UserMenu } from '../components/UserMenu.jsx';
 
 export function AboutScreen({ nav, theme, isDesktop }) {
   return (
     <div style={{ background: theme.bg, minHeight: isDesktop ? '100vh' : '100%' }}>
       <TopBar title="ABOUT" theme={theme}
         left={<IconBtn theme={theme} onClick={() => nav('back')}>{icons.back(theme.ink)}</IconBtn>}
+        right={<UserMenu nav={nav} theme={theme} />}
       />
       <div style={{ padding: isDesktop ? '60px 40px 80px' : '40px 24px 60px',
         maxWidth: isDesktop ? 720 : 'none' }}>

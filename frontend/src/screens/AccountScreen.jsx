@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../api/client.js';
 import { TopBar, IconBtn, icons } from '../components/TopBar.jsx';
 import { Identicon } from '../components/Identicon.jsx';
+import { UserMenu } from '../components/UserMenu.jsx';
 
 function InfoCard({ label, children, theme }) {
   return (
@@ -29,6 +30,7 @@ export function AccountScreen({ nav, theme, isDesktop }) {
     <div style={{ background: theme.bg, minHeight: isDesktop ? '100vh' : '100%' }}>
       <TopBar title="ACCOUNT" theme={theme}
         left={<IconBtn theme={theme} onClick={() => nav('back')}>{icons.back(theme.ink)}</IconBtn>}
+        right={<UserMenu nav={nav} theme={theme} />}
       />
       <div style={{ padding: '32px 20px 40px', textAlign: 'center' }}>
         <div style={{ display: 'inline-block' }}>
