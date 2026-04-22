@@ -1,0 +1,79 @@
+import { useState } from 'react';
+import { useAuth } from '../context/AuthContext.jsx';
+import { api } from '../api/client.js';
+import { TopBar, IconBtn, icons } from '../components/TopBar.jsx';
+import { Identicon } from '../components/Identicon.jsx';
+
+function InfoCard({ label, children, theme }) {
+  return (
+    <div style={{ padding: '14px 16px', borderRadius: 8, background: theme.panel, marginBottom: 8 }}>
+      <div style={{ fontFamily: '"Work Sans", sans-serif', fontSize: 9,
+        color: theme.sub, letterSpacing: '0.2em', marginBottom: 4 }}>{label.toUpperCase()}</div>
+      <div style={{ fontFamily: '"Noto Sans JP", sans-serif', fontSize: 13,
+        color: theme.ink, lineHeight: 1.6 }}>{children}</div>
+    </div>
+  );
+}
+
+export function AccountScreen({ nav, theme, isDesktop }) {
+  const { user, logout } = useAuth();
+  const [confirm, setConfirm] = useState(false);
+
+  const handleDelete = async () => {
+    await api.deleteAccount();
+    logout();
+    nav('public');
+  };
+
+  return (
+    <div style={{ background: theme.bg, minHeight: isDesktop ? '100vh' : '100%' }}>
+      <TopBar title="ACCOUNT" theme={theme}
+        left={<IconBtn theme={theme} onClick={() => nav('back')}>{icons.back(theme.ink)}</IconBtn>}
+      />
+      <div style={{ padding: '32px 20px 40px', textAlign: 'center' }}>
+        <div style={{ display: 'inline-block' }}>
+          <Identicon seed={user?.username || ''} size={80} />
+        </div>
+        <div style={{ fontFamily: '"Noto Serif JP", serif', fontSize: 22,
+          color: theme.ink, marginTop: 16, fontWeight: 500 }}>{user?.username}</div>
+        <div style={{ fontFamily: '"Work Sans", sans-serif', fontSize: 10,
+          color: theme.sub, letterSpacing: '0.2em', marginTop: 4 }}>MEMBER</div>
+      </div>
+
+      <div style={{ padding: '0 16px' }}>
+        <InfoCard label="ログイン名" theme={theme}>{user?.username}</InfoCard>
+        <InfoCard label="パスワード" theme={theme}>••••••••••</InfoCard>
+      </div>
+
+      <div style={{ padding: '32px 16px 80px' }}>
+        {!confirm ? (
+          <button onClick={() => setConfirm(true)} style={{
+            width: '100%', padding: '14px', borderRadius: 8,
+            background: 'transparent', border: `0.5px solid ${theme.accent}`,
+            fontFamily: '"Noto Sans JP", sans-serif', fontSize: 13,
+            color: theme.accent, cursor: 'pointer', fontWeight: 500 }}>アカウント削除</button>
+        ) : (
+          <div style={{ padding: 16, borderRadius: 8,
+            background: theme.panel, border: `0.5px solid ${theme.accent}` }}>
+            <div style={{ fontFamily: '"Noto Sans JP", sans-serif', fontSize: 12,
+              color: theme.ink, lineHeight: 1.7, marginBottom: 16 }}>
+              本当に削除しますか？<br />登録した全てのマッチ箱も削除されます。
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setConfirm(false)} style={{
+                flex: 1, padding: 10, borderRadius: 6,
+                background: 'transparent', border: `0.5px solid ${theme.line}`,
+                fontFamily: '"Noto Sans JP", sans-serif', fontSize: 12,
+                color: theme.ink, cursor: 'pointer' }}>キャンセル</button>
+              <button onClick={handleDelete} style={{
+                flex: 1, padding: 10, borderRadius: 6, border: 'none',
+                background: theme.accent,
+                fontFamily: '"Noto Sans JP", sans-serif', fontSize: 12,
+                color: theme.bg, cursor: 'pointer', fontWeight: 500 }}>削除する</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
