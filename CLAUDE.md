@@ -81,3 +81,9 @@ docker compose down    # 停止
 ## 画面構成
 
 6画面: パブリックギャラリー（トップ）・マイギャラリー・カフェマッチ詳細・カフェマッチ編集・アカウント・サイト紹介。詳細は `docs/ui_design_summary.md` を参照。
+
+## 追加ルール
+
+詳細なルールは `.claude/rules/` 以下を参照。
+
+- `.claude/rules/workflow.md` — 開発ワークフロー・issue 管理・Conventional Commits（常時ロード）
