@@ -5,10 +5,8 @@ import { Identicon } from './Identicon.jsx';
 function MenuBtn({ children, onClick, theme }) {
   return (
     <button
-      role="menuitem"
-      tabIndex={0}
+      type="button"
       onClick={onClick}
-      onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onClick()}
       style={{
         display: 'block', width: '100%', padding: '8px 12px',
         cursor: 'pointer', textAlign: 'left', border: 'none', borderRadius: 4,
@@ -32,6 +30,8 @@ export function UserMenu({ nav, theme, size = 30 }) {
   return (
     <div style={{ position: 'relative' }}>
       <button
+        type="button"
+        aria-label="ユーザーメニュー"
         aria-haspopup="menu"
         aria-expanded={menuOpen}
         onClick={() => setMenuOpen(o => !o)}
