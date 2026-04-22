@@ -4,13 +4,22 @@ import { Identicon } from './Identicon.jsx';
 
 function MenuBtn({ children, onClick, theme }) {
   return (
-    <div onClick={onClick} style={{
-      padding: '8px 12px', cursor: 'pointer',
-      fontFamily: '"Noto Sans JP", sans-serif', fontSize: 12, color: theme.ink, borderRadius: 4
-    }}
+    <button
+      role="menuitem"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onClick()}
+      style={{
+        display: 'block', width: '100%', padding: '8px 12px',
+        cursor: 'pointer', textAlign: 'left', border: 'none', borderRadius: 4,
+        fontFamily: '"Noto Sans JP", sans-serif', fontSize: 12,
+        color: theme.ink, background: 'transparent',
+      }}
       onMouseEnter={e => (e.currentTarget.style.background = theme.panel)}
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-    >{children}</div>
+      onFocus={e => (e.currentTarget.style.background = theme.panel)}
+      onBlur={e => (e.currentTarget.style.background = 'transparent')}
+    >{children}</button>
   );
 }
 
@@ -22,25 +31,33 @@ export function UserMenu({ nav, theme, size = 30 }) {
 
   return (
     <div style={{ position: 'relative' }}>
-      <div onClick={() => setMenuOpen(o => !o)} style={{ cursor: 'pointer' }}>
+      <button
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        onClick={() => setMenuOpen(o => !o)}
+        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex' }}
+      >
         <Identicon seed={user.username} size={size} />
-      </div>
+      </button>
       {menuOpen && (
         <>
           {/* オーバーレイ: メニュー外クリックで閉じる */}
           <div
-            style={{ position: 'fixed', inset: 0, zIndex: 19 }}
+            style={{ position: 'fixed', inset: 0, zIndex: 40 }}
             onClick={() => setMenuOpen(false)}
           />
-          <div style={{
-            position: 'absolute', top: size + 8, right: 0,
-            background: theme.bg, border: `0.5px solid ${theme.line}`,
-            borderRadius: 8, padding: 4, minWidth: 140,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 20
-          }}>
+          <div
+            role="menu"
+            style={{
+              position: 'absolute', top: size + 8, right: 0,
+              background: theme.bg, border: `0.5px solid ${theme.line}`,
+              borderRadius: 8, padding: 4, minWidth: 140,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 41
+            }}
+          >
             <MenuBtn theme={theme} onClick={() => { setMenuOpen(false); nav('mygallery'); }}>マイギャラリー</MenuBtn>
             <MenuBtn theme={theme} onClick={() => { setMenuOpen(false); nav('account'); }}>アカウント</MenuBtn>
-            <MenuBtn theme={theme} onClick={() => { setMenuOpen(false); logout(); }}>ログアウト</MenuBtn>
+            <MenuBtn theme={theme} onClick={() => { setMenuOpen(false); logout(); nav('public'); }}>ログアウト</MenuBtn>
           </div>
         </>
       )}
