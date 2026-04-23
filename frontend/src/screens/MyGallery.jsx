@@ -5,7 +5,7 @@ import { TopBar, IconBtn, icons } from '../components/TopBar.jsx';
 import { TagBar } from '../components/TagBar.jsx';
 import { SearchBox } from '../components/SearchBox.jsx';
 import { MatchGrid } from '../components/MatchGrid.jsx';
-import { Identicon } from '../components/Identicon.jsx';
+import { UserMenu } from '../components/UserMenu.jsx';
 
 export function MyGallery({ nav, theme, layout, isDesktop }) {
   const { user } = useAuth();
@@ -28,9 +28,7 @@ export function MyGallery({ nav, theme, layout, isDesktop }) {
     <div style={{ background: theme.bg, minHeight: isDesktop ? '100vh' : '100%' }}>
       <TopBar title="MY GALLERY" theme={theme}
         left={<IconBtn theme={theme} onClick={() => nav('public')}>{icons.back(theme.ink)}</IconBtn>}
-        right={<div onClick={() => nav('account')} style={{ cursor: 'pointer' }}>
-          <Identicon seed={user?.username || ''} size={28} />
-        </div>}
+        right={<UserMenu nav={nav} theme={theme} size={28} />}
       />
 
       <div style={{ padding: '24px 16px 12px' }}>

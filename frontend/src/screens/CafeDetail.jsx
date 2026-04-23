@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api/client.js';
+import { useAuth } from '../context/AuthContext.jsx';
 import { TopBar, IconBtn, icons } from '../components/TopBar.jsx';
 import { Matchbox } from '../components/Matchbox.jsx';
+import { UserMenu } from '../components/UserMenu.jsx';
 
 function InfoRow({ label, children, theme }) {
   return (
@@ -15,6 +17,7 @@ function InfoRow({ label, children, theme }) {
 }
 
 export function CafeDetail({ cafeId, nav, theme, editable = false, isDesktop }) {
+  const { user } = useAuth();
   const [cafe, setCafe] = useState(null);
   const [selectedImg, setSelectedImg] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -113,6 +116,8 @@ export function CafeDetail({ cafeId, nav, theme, editable = false, isDesktop }) 
             border: `0.5px solid ${theme.ink}`, background: 'transparent',
             fontFamily: '"Noto Sans JP", sans-serif', fontSize: 11,
             color: theme.ink, cursor: 'pointer', fontWeight: 500 }}>編集</button>
+        ) : user ? (
+          <UserMenu nav={nav} theme={theme} />
         ) : null}
       />
       {isDesktop ? (

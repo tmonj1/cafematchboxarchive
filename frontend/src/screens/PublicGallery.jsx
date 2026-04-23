@@ -5,28 +5,15 @@ import { TopBar } from '../components/TopBar.jsx';
 import { TagBar } from '../components/TagBar.jsx';
 import { SearchBox } from '../components/SearchBox.jsx';
 import { MatchGrid } from '../components/MatchGrid.jsx';
-import { Identicon } from '../components/Identicon.jsx';
 import { LoginModal } from '../components/LoginModal.jsx';
-
-function MenuBtn({ children, onClick, theme }) {
-  return (
-    <div onClick={onClick} style={{
-      padding: '8px 12px', cursor: 'pointer',
-      fontFamily: '"Noto Sans JP", sans-serif', fontSize: 12, color: theme.ink, borderRadius: 4
-    }}
-      onMouseEnter={e => (e.currentTarget.style.background = theme.panel)}
-      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-    >{children}</div>
-  );
-}
+import { UserMenu } from '../components/UserMenu.jsx';
 
 export function PublicGallery({ nav, theme, layout, isDesktop }) {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [matchboxes, setMatchboxes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selTag, setSelTag] = useState(null);
   const [query, setQuery] = useState('');
-  const [menuOpen, setMenuOpen] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
@@ -52,23 +39,7 @@ export function PublicGallery({ nav, theme, layout, isDesktop }) {
           color: theme.sub, letterSpacing: '0.15em'
         }}>蒐集 / 2026</div>}
         right={user ? (
-          <div style={{ position: 'relative' }}>
-            <div onClick={() => setMenuOpen(!menuOpen)} style={{ cursor: 'pointer' }}>
-              <Identicon seed={user.username} size={30} />
-            </div>
-            {menuOpen && (
-              <div style={{
-                position: 'absolute', top: 38, right: 0,
-                background: theme.bg, border: `0.5px solid ${theme.line}`,
-                borderRadius: 8, padding: 4, minWidth: 140,
-                boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 20
-              }}>
-                <MenuBtn theme={theme} onClick={() => { setMenuOpen(false); nav('mygallery'); }}>マイギャラリー</MenuBtn>
-                <MenuBtn theme={theme} onClick={() => { setMenuOpen(false); nav('account'); }}>アカウント</MenuBtn>
-                <MenuBtn theme={theme} onClick={() => { setMenuOpen(false); logout(); }}>ログアウト</MenuBtn>
-              </div>
-            )}
-          </div>
+          <UserMenu nav={nav} theme={theme} />
         ) : (
           <button onClick={() => setShowLogin(true)} style={{
             padding: '6px 12px', borderRadius: 100,

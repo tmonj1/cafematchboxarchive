@@ -36,12 +36,23 @@ function AppInner() {
       setStack(s => s.length > 1 ? s.slice(0, -1) : s);
       return;
     }
+    // public への遷移は常にスタックをリセット
+    // （ログアウト後の「戻るループ」を防ぐため push ではなく replace）
+    if (screen === 'public') {
+      setStack([{ screen: 'public' }]);
+      return;
+    }
     // ログイン後にマイギャラリーに来た場合は public を置き換える
     if (screen === 'mygallery') {
       setStack([{ screen: 'public' }, { screen: 'mygallery', ...params }]);
       return;
     }
-    setStack(s => [...s, { screen, ...params }]);
+    // 同じ画面への重複遷移はスキップ
+    setStack(s => {
+      const cur = s[s.length - 1];
+      if (cur.screen === screen) return s;
+      return [...s, { screen, ...params }];
+    });
   };
 
   const current = stack[stack.length - 1];
