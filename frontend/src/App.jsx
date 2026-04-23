@@ -36,6 +36,12 @@ function AppInner() {
       setStack(s => s.length > 1 ? s.slice(0, -1) : s);
       return;
     }
+    // public への遷移は常にスタックをリセット
+    // （ログアウト後の「戻るループ」を防ぐため push ではなく replace）
+    if (screen === 'public') {
+      setStack([{ screen: 'public' }]);
+      return;
+    }
     // ログイン後にマイギャラリーに来た場合は public を置き換える
     if (screen === 'mygallery') {
       setStack([{ screen: 'public' }, { screen: 'mygallery', ...params }]);
