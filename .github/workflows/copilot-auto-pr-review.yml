@@ -1,10 +1,14 @@
 name: Copilot Review
 
 on:
-  pull_request:
+  pull_request_target:
     types:
       # opened は除外する。PR 作成時はリポジトリ設定により Copilot レビューが
       # 自動実行されるため、ここでリクエストすると二重実行になる。
+      # pull_request_target を使用する理由: pull_request イベントでは GH_PAT が
+      # PR ブランチのワークフロー定義で実行されるためシークレット流出リスクがある。
+      # pull_request_target はベースブランチのワークフロー定義で実行されるため安全。
+      # checkout や任意スクリプト実行は行わないため、コード実行リスクもない。
       - synchronize
 
 # このワークフローを動作させるには、以下の設定が必要:
