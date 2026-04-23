@@ -1,0 +1,45 @@
+name: Copilot Review
+
+on:
+  pull_request_target:
+    types:
+      # opened は除外する。PR 作成時はリポジトリ設定により Copilot レビューが
+      # 自動実行されるため、ここでリクエストすると二重実行になる。
+      # pull_request_target を使用する理由: pull_request イベントでは GH_PAT が
+      # PR ブランチのワークフロー定義で実行されるためシークレット流出リスクがある。
+      # pull_request_target はベースブランチのワークフロー定義で実行されるため安全。
+      # checkout や任意スクリプト実行は行わないため、コード実行リスクもない。
+      - synchronize
+
+# このワークフローを動作させるには、以下の設定が必要:
+# 1. Copilot コードレビューがリポジトリで有効になっていること
+#    (Settings → Copilot → Code review)
+# 2. Copilot が有効なユーザーの fine-grained Personal Access Token を
+#    リポジトリシークレット GH_PAT に設定すること
+#    対象はこのリポジトリのみに限定し、必要権限は Pull requests: Read and write
+#    （レビュー依頼の削除/追加に必要な最小権限）とする
+#    (GITHUB_TOKEN は Copilot 権限を持たないため動作しない)
+permissions: {}
+
+# 同一 PR への連続プッシュで多重実行されないよう PR 番号単位で直列化する。
+# cancel-in-progress: true にすることで古い実行をキャンセルし最新のみを実行する。
+concurrency:
+  group: copilot-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  request-copilot-review:
+    name: Request Copilot review
+    runs-on: ubuntu-latest
+    # fork からの PR ではシークレットが利用できないためスキップする。
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Request review from Copilot
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # すでにレビューリクエスト済みの場合は一度削除してから再リクエストする。
+          # 削除→再追加することで、新しいコミットがプッシュされたときも Copilot が再レビューを行う。
+          gh pr edit ${{ github.event.pull_request.number }} --remove-reviewer @copilot 2>/dev/null || true
+          gh pr edit ${{ github.event.pull_request.number }} --add-reviewer @copilot
