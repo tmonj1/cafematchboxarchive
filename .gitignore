@@ -21,3 +21,6 @@ dist/
 
 # macOS
 .DS_Store
+
+# lock files (claude code)
+*.lock
