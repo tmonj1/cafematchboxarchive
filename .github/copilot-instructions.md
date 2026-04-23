@@ -7,9 +7,9 @@
 
 ## Review priorities (most important first)
 1. **Correctness / behavior (strict)** for production source code:
-   - Logic correctness, error handling, exit codes
-   - CLI UX: argument parsing, help text accuracy, defaults, backward compatibility
-   - Security concerns: shell injection, path traversal, unsafe file operations, secrets handling
+   - Logic correctness, error handling, HTTP status codes
+   - API/HTTP: endpoint compatibility, request/response schema, input validation, authorization
+   - Security concerns: injection, path traversal, unsafe file operations, secrets handling
 2. **Maintainability (moderate)**:
    - Clear structure, separation of concerns, naming (only when it impacts understanding)
    - Reasonable complexity and duplication (only when meaningful)
@@ -41,4 +41,4 @@
 ## What to ignore
 - Formatting-only preferences (quote style, blank lines, import sorting) unless it breaks tooling.
 - Minor wording preferences in comments/docstrings.
-- Micro-optimizations unless they affect correctness or CLI responsiveness.
+- Micro-optimizations unless they affect correctness or user-facing performance.
