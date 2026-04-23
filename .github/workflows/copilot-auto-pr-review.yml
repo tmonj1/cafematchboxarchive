@@ -37,6 +37,7 @@ jobs:
       - name: Request review from Copilot
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_REPO: ${{ github.repository }}
         run: |
           # すでにレビューリクエスト済みの場合は一度削除してから再リクエストする。
           # 削除→再追加することで、新しいコミットがプッシュされたときも Copilot が再レビューを行う。
