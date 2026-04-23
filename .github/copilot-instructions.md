@@ -1,4 +1,4 @@
-# Copilot instructions for pull request review (Python CLI)
+# Copilot instructions for pull request review (Web app: FastAPI + React)
 
 ## Language / tone
 - Write the review in **Japanese**.

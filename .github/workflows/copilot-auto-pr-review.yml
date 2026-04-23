@@ -10,8 +10,10 @@ on:
 # このワークフローを動作させるには、以下の設定が必要:
 # 1. Copilot コードレビューがリポジトリで有効になっていること
 #    (Settings → Copilot → Code review)
-# 2. Copilot が有効なユーザーの Personal Access Token (classic, repo スコープ) を
+# 2. Copilot が有効なユーザーの fine-grained Personal Access Token を
 #    リポジトリシークレット GH_PAT に設定すること
+#    対象はこのリポジトリのみに限定し、必要権限は Pull requests: Read and write
+#    （レビュー依頼の削除/追加に必要な最小権限）とする
 #    (GITHUB_TOKEN は Copilot 権限を持たないため動作しない)
 permissions: {}
 
@@ -28,11 +30,6 @@ jobs:
     # fork からの PR ではシークレットが利用できないためスキップする。
     if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
       - name: Request review from Copilot
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
