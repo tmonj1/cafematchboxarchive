@@ -1,7 +1,7 @@
 export function TopBar({ title, left, right, theme }) {
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center',
       padding: '12px 16px', minHeight: 48,
       borderBottom: `0.5px solid ${theme.line}`,
       background: theme.bg,
@@ -9,11 +9,10 @@ export function TopBar({ title, left, right, theme }) {
     }}>
       <div style={{ display: 'flex', alignItems: 'center' }}>{left}</div>
       <div style={{
-        position: 'absolute', left: 0, right: 0, textAlign: 'center', pointerEvents: 'none',
         fontFamily: '"Noto Sans JP", sans-serif', fontSize: 15, fontWeight: 600,
-        color: theme.ink, letterSpacing: '0.05em'
+        color: theme.ink, letterSpacing: '0.05em', whiteSpace: 'nowrap',
       }}>{title}</div>
-      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>{right}</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>{right}</div>
     </div>
   );
 }
