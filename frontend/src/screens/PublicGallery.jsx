@@ -15,6 +15,7 @@ export function PublicGallery({ nav, theme, layout, isDesktop }) {
   const [selTag, setSelTag] = useState(null);
   const [query, setQuery] = useState('');
   const [showLogin, setShowLogin] = useState(false);
+  const [loginMode, setLoginMode] = useState('login');
 
   useEffect(() => {
     api.listMatchboxes().then(setMatchboxes).finally(() => setLoading(false));
@@ -34,19 +35,23 @@ export function PublicGallery({ nav, theme, layout, isDesktop }) {
   return (
     <div style={{ background: theme.bg, minHeight: isDesktop ? '100vh' : '100%' }}>
       <TopBar title="CAFE MATCHBOX ARCHIVE" theme={theme}
-        left={<div style={{
-          fontFamily: '"Work Sans", sans-serif', fontSize: 10,
-          color: theme.sub, letterSpacing: '0.15em'
-        }}>蒐集 / 2026</div>}
         right={user ? (
           <UserMenu nav={nav} theme={theme} />
         ) : (
-          <button onClick={() => setShowLogin(true)} style={{
-            padding: '6px 12px', borderRadius: 100,
-            border: `0.5px solid ${theme.ink}`, background: 'transparent',
-            fontFamily: '"Noto Sans JP", sans-serif', fontSize: 11,
-            color: theme.ink, cursor: 'pointer', fontWeight: 500
-          }}>ログイン</button>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={() => { setLoginMode('register'); setShowLogin(true); }} style={{
+              padding: '6px 12px', borderRadius: 100,
+              border: `0.5px solid ${theme.ink}`, background: 'transparent',
+              fontFamily: '"Noto Sans JP", sans-serif', fontSize: 11,
+              color: theme.ink, cursor: 'pointer', fontWeight: 500
+            }}>新規登録</button>
+            <button onClick={() => { setLoginMode('login'); setShowLogin(true); }} style={{
+              padding: '6px 12px', borderRadius: 100,
+              border: `0.5px solid ${theme.ink}`, background: 'transparent',
+              fontFamily: '"Noto Sans JP", sans-serif', fontSize: 11,
+              color: theme.ink, cursor: 'pointer', fontWeight: 500
+            }}>ログイン</button>
+          </div>
         )}
       />
 
@@ -103,7 +108,7 @@ export function PublicGallery({ nav, theme, layout, isDesktop }) {
       </div>
 
       {showLogin && (
-        <LoginModal theme={theme} onClose={() => {
+        <LoginModal theme={theme} initialMode={loginMode} onClose={() => {
           setShowLogin(false);
           if (localStorage.getItem('cma_token')) nav('mygallery');
         }} />
