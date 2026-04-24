@@ -7,12 +7,13 @@ export function TopBar({ title, left, right, theme }) {
       background: theme.bg,
       position: 'sticky', top: 0, zIndex: 10,
     }}>
-      <div style={{ width: 80, display: 'flex', alignItems: 'center' }}>{left}</div>
+      <div style={{ minWidth: 80, display: 'flex', alignItems: 'center' }}>{left}</div>
       <div style={{
+        flex: 1, textAlign: 'center',
         fontFamily: '"Noto Sans JP", sans-serif', fontSize: 15, fontWeight: 600,
         color: theme.ink, letterSpacing: '0.05em'
       }}>{title}</div>
-      <div style={{ width: 80, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>{right}</div>
+      <div style={{ minWidth: 80, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>{right}</div>
     </div>
   );
 }
