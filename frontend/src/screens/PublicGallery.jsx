@@ -39,12 +39,14 @@ export function PublicGallery({ nav, theme, layout, isDesktop }) {
           <UserMenu nav={nav} theme={theme} />
         ) : (
           <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={() => { setLoginMode('register'); setShowLogin(true); }} style={{
-              padding: '6px 12px', borderRadius: 100,
-              border: `0.5px solid ${theme.ink}`, background: 'transparent',
-              fontFamily: '"Noto Sans JP", sans-serif', fontSize: 11,
-              color: theme.ink, cursor: 'pointer', fontWeight: 500
-            }}>新規登録</button>
+            {isDesktop && (
+              <button onClick={() => { setLoginMode('register'); setShowLogin(true); }} style={{
+                padding: '6px 12px', borderRadius: 100,
+                border: `0.5px solid ${theme.ink}`, background: 'transparent',
+                fontFamily: '"Noto Sans JP", sans-serif', fontSize: 11,
+                color: theme.ink, cursor: 'pointer', fontWeight: 500
+              }}>新規登録</button>
+            )}
             <button onClick={() => { setLoginMode('login'); setShowLogin(true); }} style={{
               padding: '6px 12px', borderRadius: 100,
               border: `0.5px solid ${theme.ink}`, background: 'transparent',
