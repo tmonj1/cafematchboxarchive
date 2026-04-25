@@ -8,7 +8,7 @@
 - **マイギャラリー**: 自分のコレクションを管理
 - **マッチ箱の登録・編集**: 画像アップロード、タグ付け、喫茶店情報の入力
 - **検索・タグフィルタ**: キーワードやタグで絞り込み
-- **ユーザー認証**: アカウント登録・ログイン
+- **ユーザー認証**: アカウント登録・ログイン（パスワード認証 / OIDC ソーシャルログイン）
 
 ## 技術スタック
 
@@ -37,25 +37,57 @@ cd cafematchboxarchive
 
 ### 2. 環境変数の設定
 
-`.env` ファイルをプロジェクトルートに作成します。
+`.env.example` をコピーして `.env` ファイルをプロジェクトルートに作成します。
 
 ```bash
+cp .env.example .env
+```
+
+主な設定項目は以下のとおりです。
+
+```bash
+# JWT
+JWT_SECRET=dev-secret-change-in-production
+JWT_EXPIRE_MINUTES=1440
+
 # DynamoDB
+DYNAMODB_ENDPOINT=http://dynamodb:8001
 AWS_ACCESS_KEY_ID=dummy
 AWS_SECRET_ACCESS_KEY=dummy
 AWS_DEFAULT_REGION=ap-northeast-1
-DYNAMODB_ENDPOINT_URL=http://localhost:8001
 
-# MinIO (S3互換)
-S3_ENDPOINT_URL=http://localhost:9000
+# S3 / MinIO
+S3_ENDPOINT=http://minio:9000
 S3_BUCKET=cafematchbox-images
+S3_ACCESS_KEY=minioadmin
+S3_SECRET_KEY=minioadmin
+
+# MinIO console (ローカル開発のみ)
 MINIO_ROOT_USER=minioadmin
 MINIO_ROOT_PASSWORD=minioadmin
 
-# JWT認証
-SECRET_KEY=your-secret-key-here
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=60
+# OIDC (省略可。有効化する場合は下記を参照)
+# OIDC_PROVIDERS={"keycloak":{...}}
+```
+
+### OIDC ソーシャルログインを有効化する場合
+
+OIDC は省略可能な機能です。Keycloak などの IdP を使う場合のみ設定してください。
+
+**バックエンド（`.env`）**
+
+`OIDC_PROVIDERS` に JSON 形式でプロバイダーを設定します。Keycloak をローカルで使う例:
+
+```bash
+OIDC_PROVIDERS={"keycloak":{"client_id":"cma-frontend","client_secret":"","issuer":"http://localhost:8080/realms/cma","discovery_url":"http://keycloak:8080/realms/cma","allowed_redirect_uris":["http://localhost:5173/oidc-callback"]}}
+```
+
+> **重要**: `issuer` と Keycloak 管理画面の **Realm settings → Frontend URL** を一致させてください。`discovery_url` はバックエンドが Docker ネットワーク内から OIDC 設定を取得するための URL です。
+
+**フロントエンド（`frontend/.env.local`）**
+
+```bash
+VITE_OIDC_PROVIDERS=[{"name":"keycloak","label":"Keycloakでログイン","clientId":"cma-frontend","issuer":"http://localhost:8080/realms/cma","authorizationEndpoint":"http://localhost:8080/realms/cma/protocol/openid-connect/auth","redirectUri":"http://localhost:5173/oidc-callback"}]
 ```
 
 ## 実行方法
@@ -74,6 +106,7 @@ docker compose up -d
 | API ドキュメント (Swagger UI) | http://localhost:8000/docs |
 | DynamoDB Local | http://localhost:8001 |
 | MinIO コンソール | http://localhost:9001 |
+| Keycloak 管理コンソール（OIDC 使用時） | http://localhost:8080 |
 
 ### フロントエンド (開発サーバー)
 
@@ -117,7 +150,8 @@ npm test
 |----------|------|------|
 | `GET` | `/api/health` | ヘルスチェック |
 | `POST` | `/api/auth/register` | ユーザー登録 |
-| `POST` | `/api/auth/login` | ログイン |
+| `POST` | `/api/auth/login` | ログイン（パスワード認証） |
+| `POST` | `/api/auth/oidc/callback` | OIDCコールバック（ソーシャルログイン） |
 | `GET` | `/api/matchboxes` | マッチ箱一覧取得 |
 | `POST` | `/api/matchboxes` | マッチ箱登録 |
 | `GET` | `/api/matchboxes/{id}` | マッチ箱詳細取得 |
