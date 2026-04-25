@@ -93,6 +93,17 @@ services:
         mc mb local/${S3_BUCKET:-cafematchbox-images} 2>/dev/null || echo "bucket already exists"
         mc anonymous set download local/${S3_BUCKET:-cafematchbox-images}
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    ports:
+      - "8080:8080"
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    command: start-dev
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+
   api:
     build: ./backend
     ports:
@@ -110,3 +121,4 @@ services:
 
 volumes:
   minio_data:
+  keycloak_data:
