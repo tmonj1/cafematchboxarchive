@@ -8,7 +8,7 @@ export function OidcCallbackScreen({ nav, theme }) {
 
   useEffect(() => {
     function clearCallbackQuery() {
-      window.history.replaceState({}, '', window.location.pathname);
+      window.history.replaceState({}, '', '/');
     }
 
     async function handleCallback() {

@@ -79,13 +79,13 @@ def exchange_code(
 
     jwks = _get_jwks(jwks_uri)
     # python-jose は JWKS dict を渡すと kid で自動的に適切な鍵を選択する
-    # access_token を渡すことで IDトークンの at_hash クレームを検証できる
-    payload = jwt.decode(
-        id_token,
-        jwks,
-        algorithms=["RS256"],
-        audience=provider_config["client_id"],
-        issuer=provider_config["issuer"],
-        access_token=access_token,
-    )
+    # access_token が存在する場合のみ渡して at_hash クレームを検証する
+    decode_kwargs: dict = {
+        "algorithms": ["RS256"],
+        "audience": provider_config["client_id"],
+        "issuer": provider_config["issuer"],
+    }
+    if access_token:
+        decode_kwargs["access_token"] = access_token
+    payload = jwt.decode(id_token, jwks, **decode_kwargs)
     return payload

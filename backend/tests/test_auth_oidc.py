@@ -3,7 +3,12 @@ import pytest
 
 
 FAKE_CLAIMS = {"sub": "oidc-sub-001", "email": "user@example.com", "name": "OIDC User"}
-OIDC_PROVIDERS_ENV = '{"keycloak":{"client_id":"cma-frontend","client_secret":"","issuer":"http://keycloak.test/realms/cma"}}'
+REDIRECT_URI = "http://localhost:5173/oidc-callback"
+OIDC_PROVIDERS_ENV = (
+    '{"keycloak":{"client_id":"cma-frontend","client_secret":"",'
+    '"issuer":"http://keycloak.test/realms/cma",'
+    f'"allowed_redirect_uris":["{REDIRECT_URI}"]}}}}'
+)
 
 
 @pytest.fixture
@@ -17,7 +22,7 @@ async def test_oidc_callback_creates_new_user(client, oidc_env):
         resp = await client.post("/api/auth/oidc/callback", json={
             "code": "auth_code",
             "code_verifier": "verifier",
-            "redirect_uri": "http://localhost:5173/oidc-callback",
+            "redirect_uri": REDIRECT_URI,
             "provider": "keycloak",
         })
     assert resp.status_code == 200
@@ -33,13 +38,13 @@ async def test_oidc_callback_links_existing_user(client, oidc_env):
         resp1 = await client.post("/api/auth/oidc/callback", json={
             "code": "code1",
             "code_verifier": "v1",
-            "redirect_uri": "http://localhost:5173/oidc-callback",
+            "redirect_uri": REDIRECT_URI,
             "provider": "keycloak",
         })
         resp2 = await client.post("/api/auth/oidc/callback", json={
             "code": "code2",
             "code_verifier": "v2",
-            "redirect_uri": "http://localhost:5173/oidc-callback",
+            "redirect_uri": REDIRECT_URI,
             "provider": "keycloak",
         })
 
@@ -61,7 +66,7 @@ async def test_oidc_callback_unknown_provider(client, oidc_env):
     resp = await client.post("/api/auth/oidc/callback", json={
         "code": "code",
         "code_verifier": "v",
-        "redirect_uri": "http://localhost:5173/oidc-callback",
+        "redirect_uri": REDIRECT_URI,
         "provider": "unknown_op",
     })
     assert resp.status_code == 400
@@ -75,7 +80,7 @@ async def test_oidc_callback_token_endpoint_error(client, oidc_env):
         resp = await client.post("/api/auth/oidc/callback", json={
             "code": "bad_code",
             "code_verifier": "v",
-            "redirect_uri": "http://localhost:5173/oidc-callback",
+            "redirect_uri": REDIRECT_URI,
             "provider": "keycloak",
         })
     assert resp.status_code == 502
@@ -89,7 +94,7 @@ async def test_oidc_callback_invalid_jwt(client, oidc_env):
         resp = await client.post("/api/auth/oidc/callback", json={
             "code": "code",
             "code_verifier": "v",
-            "redirect_uri": "http://localhost:5173/oidc-callback",
+            "redirect_uri": REDIRECT_URI,
             "provider": "keycloak",
         })
     assert resp.status_code == 401
@@ -102,7 +107,7 @@ async def test_oidc_callback_missing_email(client, oidc_env):
         resp = await client.post("/api/auth/oidc/callback", json={
             "code": "code",
             "code_verifier": "v",
-            "redirect_uri": "http://localhost:5173/oidc-callback",
+            "redirect_uri": REDIRECT_URI,
             "provider": "keycloak",
         })
     assert resp.status_code == 400
@@ -117,7 +122,7 @@ async def test_oidc_callback_missing_sub(client, oidc_env):
         resp = await client.post("/api/auth/oidc/callback", json={
             "code": "code",
             "code_verifier": "v",
-            "redirect_uri": "http://localhost:5173/oidc-callback",
+            "redirect_uri": REDIRECT_URI,
             "provider": "keycloak",
         })
     assert resp.status_code == 400
@@ -139,10 +144,24 @@ async def test_oidc_callback_links_local_user_by_username(client, oidc_env):
         resp = await client.post("/api/auth/oidc/callback", json={
             "code": "code",
             "code_verifier": "v",
-            "redirect_uri": "http://localhost:5173/oidc-callback",
+            "redirect_uri": REDIRECT_URI,
             "provider": "keycloak",
         })
     assert resp.status_code == 200
 
     user = db_users.get_user_by_username(email)
+    assert user is not None
     assert any(p["provider"] == "keycloak" for p in user.get("oidcProviders", []))
+
+
+@pytest.mark.asyncio
+async def test_oidc_callback_invalid_redirect_uri(client, oidc_env):
+    """allowed_redirect_uris に含まれない redirect_uri は 400 を返す。"""
+    resp = await client.post("/api/auth/oidc/callback", json={
+        "code": "code",
+        "code_verifier": "v",
+        "redirect_uri": "http://evil.example.com/callback",
+        "provider": "keycloak",
+    })
+    assert resp.status_code == 400
+    assert "redirect_uri" in resp.json()["detail"]
