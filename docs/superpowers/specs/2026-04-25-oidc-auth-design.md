@@ -58,10 +58,12 @@
 | `email` | String (optional) | OIDCで取得したメール。ローカルユーザーはnull |
 | `oidcProviders` | List (optional) | 連携済みプロバイダー情報の配列 |
 
-`oidcProviders` の各要素:
+`oidcProviders` の形式（Map: provider名 → sub）:
 ```json
-{ "provider": "google", "sub": "1234567890" }
+{ "google": "1234567890", "keycloak": "sub-abc" }
 ```
+
+※ リスト of Map ではなく Map 形式を採用。DynamoDB の `contains` 関数がリスト内の Map 要素に対して正しく動作しないため、`attribute_not_exists(oidcProviders.#p)` による原子的な重複防止が可能な Map 形式とした。
 
 ### 新規GSI
 

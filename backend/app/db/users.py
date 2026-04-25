@@ -59,7 +59,10 @@ def get_user_by_email(email: str) -> Optional[dict]:
 
 
 def create_oidc_user(email: str, display_name: str, provider: str, sub: str) -> dict:
-    """OIDCユーザーを新規作成して返す。"""
+    """OIDCユーザーを新規作成して返す。
+
+    oidcProviders は {provider_name: sub} の Map 形式で保存する。
+    """
     user = {
         "userId": str(uuid.uuid4()),
         "username": email,
@@ -67,7 +70,7 @@ def create_oidc_user(email: str, display_name: str, provider: str, sub: str) -> 
         "displayName": display_name,
         "passwordHash": None,
         "bio": "",
-        "oidcProviders": [{"provider": provider, "sub": sub}],
+        "oidcProviders": {provider: sub},
         "createdAt": datetime.now(timezone.utc).isoformat(),
     }
     _table().put_item(Item=user)
@@ -77,25 +80,23 @@ def create_oidc_user(email: str, display_name: str, provider: str, sub: str) -> 
 def link_oidc_provider(user_id: str, provider: str, sub: str) -> None:
     """既存ユーザーにOIDCプロバイダーを連携する。既に連携済みならスキップ。
 
-    list_append + if_not_exists による原子的更新でレースコンディションを防ぐ。
+    oidcProviders は {provider_name: sub} の Map 形式。
+    attribute_not_exists による原子的更新でレースコンディションと重複を防ぐ。
+    DynamoDB の contains はリスト内 Map に対して動作しないため Map 形式を採用。
     """
-    new_entry = {"provider": provider, "sub": sub}
     try:
         _table().update_item(
             Key={"userId": user_id},
-            UpdateExpression="SET oidcProviders = list_append(if_not_exists(oidcProviders, :empty), :new)",
-            ConditionExpression="attribute_exists(userId) AND NOT contains(oidcProviders, :entry)",
-            ExpressionAttributeValues={
-                ":empty": [],
-                ":new": [new_entry],
-                ":entry": new_entry,
-            },
+            UpdateExpression="SET oidcProviders.#p = :s",
+            ConditionExpression="attribute_exists(userId) AND attribute_not_exists(oidcProviders.#p)",
+            ExpressionAttributeNames={"#p": provider},
+            ExpressionAttributeValues={":s": sub},
         )
     except ClientError as e:
         if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
             raise
         # ConditionalCheckFailed の原因を区別する:
         # - userId が存在しない → 不整合なのでエラー
-        # - 既に連携済み → 正常スキップ
+        # - oidcProviders.{provider} が既に存在 → 連携済みのためスキップ
         if get_user_by_id(user_id) is None:
             raise ValueError(f"user not found: {user_id}") from e

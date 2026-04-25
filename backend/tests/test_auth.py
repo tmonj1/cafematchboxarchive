@@ -100,7 +100,7 @@ def test_create_oidc_user(aws_mock):
     assert user["email"] == "alice@example.com"
     assert user["displayName"] == "Alice"
     assert user["passwordHash"] is None
-    assert user["oidcProviders"] == [{"provider": "keycloak", "sub": "sub-001"}]
+    assert user["oidcProviders"] == {"keycloak": "sub-001"}
     assert "userId" in user
 
 
@@ -115,12 +115,11 @@ def test_link_oidc_provider_adds_new_provider(aws_mock):
     user = create_oidc_user("carol@example.com", "Carol", "keycloak", "sub-003")
     link_oidc_provider(user["userId"], "github", "gh-003")
     updated = get_user_by_id(user["userId"])
-    assert len(updated["oidcProviders"]) == 2
-    assert {"provider": "github", "sub": "gh-003"} in updated["oidcProviders"]
+    assert updated["oidcProviders"] == {"keycloak": "sub-003", "github": "gh-003"}
 
 
 def test_link_oidc_provider_skips_duplicate(aws_mock):
     user = create_oidc_user("dave@example.com", "Dave", "keycloak", "sub-004")
     link_oidc_provider(user["userId"], "keycloak", "sub-004")  # 同じプロバイダー・sub
     updated = get_user_by_id(user["userId"])
-    assert len(updated["oidcProviders"]) == 1  # 重複なし
+    assert updated["oidcProviders"] == {"keycloak": "sub-004"}  # 重複なし
