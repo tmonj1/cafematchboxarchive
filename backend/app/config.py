@@ -1,4 +1,5 @@
 import os
+import json
 
 
 def get(key: str, default: str = "") -> str:
@@ -20,3 +21,6 @@ S3_ENDPOINT = lambda: get("S3_ENDPOINT", "")
 S3_BUCKET = lambda: get("S3_BUCKET", "cafematchbox-images")
 S3_ACCESS_KEY = lambda: get("S3_ACCESS_KEY", "minioadmin")
 S3_SECRET_KEY = lambda: get("S3_SECRET_KEY", "minioadmin")
+
+# OIDC
+OIDC_PROVIDERS = lambda: json.loads(get("OIDC_PROVIDERS", "{}"))

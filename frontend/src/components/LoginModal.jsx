@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { buildAuthUrl, getOidcProviders } from '../auth/oidc.js';
 
 export function LoginModal({ onClose, theme, initialMode = 'login' }) {
   const { login, register } = useAuth();
+  const oidcProviders = getOidcProviders();
   const [mode, setMode] = useState(initialMode === 'register' ? 'register' : 'login'); // 'login' | 'register'
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -77,6 +79,45 @@ export function LoginModal({ onClose, theme, initialMode = 'login' }) {
             {mode === 'login' ? '新規登録はこちら' : 'ログインはこちら'}
           </button>
         </div>
+
+        {oidcProviders.length > 0 && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16 }}>
+              <hr style={{ flex: 1, border: 'none', borderTop: `0.5px solid ${theme.line}` }} />
+              <span style={{
+                fontSize: 10, color: theme.sub,
+                fontFamily: '"Work Sans", sans-serif', letterSpacing: '0.2em',
+              }}>OR</span>
+              <hr style={{ flex: 1, border: 'none', borderTop: `0.5px solid ${theme.line}` }} />
+            </div>
+            {oidcProviders.map(provider => (
+              <button
+                key={provider.name}
+                disabled={loading}
+                onClick={async () => {
+                  if (loading) return;
+                  setLoading(true);
+                  setError('');
+                  try {
+                    const url = await buildAuthUrl(provider.name, provider);
+                    window.location.href = url;
+                  } catch (e) {
+                    setError(e?.message || 'エラーが発生しました');
+                    setLoading(false);
+                  }
+                }}
+                style={{
+                  marginTop: 8, width: '100%', padding: '12px',
+                  borderRadius: 8, border: `0.5px solid ${theme.line}`,
+                  background: theme.panel, fontFamily: '"Noto Sans JP", sans-serif',
+                  fontSize: 13, color: theme.ink, cursor: loading ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {provider.label}
+              </button>
+            ))}
+          </>
+        )}
       </div>
     </div>
   );

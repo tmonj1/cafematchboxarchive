@@ -21,7 +21,7 @@ def register(body: UserRegisterRequest):
 @router.post("/login", response_model=TokenResponse)
 def login(body: UserLoginRequest):
     user = db_users.get_user_by_username(body.username)
-    if not user or not _pwd.verify(body.password, user["passwordHash"]):
+    if not user or not user.get("passwordHash") or not _pwd.verify(body.password, user["passwordHash"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     token = create_token({"sub": user["userId"], "username": user["username"]})
     return {"access_token": token, "token_type": "bearer"}

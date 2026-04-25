@@ -1,6 +1,9 @@
 import pytest
 from app.auth.jwt import create_token, decode_token
-from app.db.users import create_user, get_user_by_username, get_user_by_id, delete_user
+from app.db.users import (
+    create_user, get_user_by_username, get_user_by_id, delete_user,
+    get_user_by_email, create_oidc_user, link_oidc_provider,
+)
 
 
 def test_create_and_decode_token():
@@ -79,3 +82,51 @@ async def test_login_wrong_password(client):
 async def test_delete_account(auth_client):
     resp = await auth_client.delete("/api/auth/account")
     assert resp.status_code == 204
+
+
+def test_get_user_by_email_not_found(aws_mock):
+    result = get_user_by_email("nobody@example.com")
+    assert result is None
+
+
+def test_create_oidc_user(aws_mock):
+    user = create_oidc_user(
+        email="alice@example.com",
+        display_name="Alice",
+        provider="keycloak",
+        sub="sub-001",
+    )
+    assert user["username"] == "alice@example.com"
+    assert user["email"] == "alice@example.com"
+    assert user["displayName"] == "Alice"
+    assert user["passwordHash"] is None
+    assert user["oidcProviders"] == {"keycloak": "sub-001"}
+    assert "userId" in user
+
+
+def test_get_user_by_email_found(aws_mock):
+    create_oidc_user("bob@example.com", "Bob", "keycloak", "sub-002")
+    user = get_user_by_email("bob@example.com")
+    assert user is not None
+    assert user["email"] == "bob@example.com"
+
+
+def test_link_oidc_provider_adds_new_provider(aws_mock):
+    user = create_oidc_user("carol@example.com", "Carol", "keycloak", "sub-003")
+    link_oidc_provider(user["userId"], "github", "gh-003")
+    updated = get_user_by_id(user["userId"])
+    assert updated["oidcProviders"] == {"keycloak": "sub-003", "github": "gh-003"}
+
+
+def test_link_oidc_provider_skips_duplicate(aws_mock):
+    user = create_oidc_user("dave@example.com", "Dave", "keycloak", "sub-004")
+    link_oidc_provider(user["userId"], "keycloak", "sub-004")  # 同じプロバイダー・sub
+    updated = get_user_by_id(user["userId"])
+    assert updated["oidcProviders"] == {"keycloak": "sub-004"}  # 重複なし
+
+
+def test_link_oidc_provider_rejects_different_sub(aws_mock):
+    """異なる sub が登録済みの場合は ValueError を送出する（アカウント乗っ取り防止）。"""
+    user = create_oidc_user("eve@example.com", "Eve", "keycloak", "sub-005")
+    with pytest.raises(ValueError, match="already linked to a different sub"):
+        link_oidc_provider(user["userId"], "keycloak", "sub-999")
