@@ -58,7 +58,7 @@ async def test_oidc_callback_links_existing_user(client, oidc_env):
     def decode_jwt_sub(token):
         payload = token.split(".")[1]
         payload += "=" * (-len(payload) % 4)
-        return json_mod.loads(base64.b64decode(payload))["sub"]
+        return json_mod.loads(base64.urlsafe_b64decode(payload))["sub"]
 
     sub1 = decode_jwt_sub(resp1.json()["access_token"])
     sub2 = decode_jwt_sub(resp2.json()["access_token"])

@@ -93,15 +93,24 @@ export function LoginModal({ onClose, theme, initialMode = 'login' }) {
             {oidcProviders.map(provider => (
               <button
                 key={provider.name}
+                disabled={loading}
                 onClick={async () => {
-                  const url = await buildAuthUrl(provider.name, provider);
-                  window.location.href = url;
+                  if (loading) return;
+                  setLoading(true);
+                  setError('');
+                  try {
+                    const url = await buildAuthUrl(provider.name, provider);
+                    window.location.href = url;
+                  } catch (e) {
+                    setError(e?.message || 'エラーが発生しました');
+                    setLoading(false);
+                  }
                 }}
                 style={{
                   marginTop: 8, width: '100%', padding: '12px',
                   borderRadius: 8, border: `0.5px solid ${theme.line}`,
                   background: theme.panel, fontFamily: '"Noto Sans JP", sans-serif',
-                  fontSize: 13, color: theme.ink, cursor: 'pointer',
+                  fontSize: 13, color: theme.ink, cursor: loading ? 'not-allowed' : 'pointer',
                 }}
               >
                 {provider.label}
