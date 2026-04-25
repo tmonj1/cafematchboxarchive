@@ -31,6 +31,7 @@ def aws_mock():
             AttributeDefinitions=[
                 {"AttributeName": "userId", "AttributeType": "S"},
                 {"AttributeName": "username", "AttributeType": "S"},
+                {"AttributeName": "email", "AttributeType": "S"},
             ],
             KeySchema=[{"AttributeName": "userId", "KeyType": "HASH"}],
             BillingMode="PAY_PER_REQUEST",
@@ -39,7 +40,12 @@ def aws_mock():
                     "IndexName": "username-index",
                     "KeySchema": [{"AttributeName": "username", "KeyType": "HASH"}],
                     "Projection": {"ProjectionType": "ALL"},
-                }
+                },
+                {
+                    "IndexName": "email-index",
+                    "KeySchema": [{"AttributeName": "email", "KeyType": "HASH"}],
+                    "Projection": {"ProjectionType": "ALL"},
+                },
             ],
         )
         ddb.create_table(
