@@ -56,7 +56,7 @@
 |---|---|---|
 | `displayName` | String (optional) | OPから取得した表示名（nameクレーム） |
 | `email` | String (optional) | OIDCで取得したメール。ローカルユーザーはnull |
-| `oidcProviders` | List (optional) | 連携済みプロバイダー情報の配列 |
+| `oidcProviders` | Map&lt;String, String&gt; (optional) | 連携済みプロバイダー情報（provider名 → sub） |
 
 `oidcProviders` の形式（Map: provider名 → sub）:
 ```json

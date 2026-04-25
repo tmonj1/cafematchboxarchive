@@ -61,6 +61,16 @@ def oidc_callback(body: OidcCallbackRequest):
         db_users.link_oidc_provider(user["userId"], body.provider, sub)
     else:
         user = db_users.create_oidc_user(email, display_name, body.provider, sub)
+        # 同一 email の並列コールバックによる重複作成を防ぐための再チェック。
+        # DynamoDB の email-index は GSI のため書き込み後に即時反映されない場合があるが、
+        # 楽観的な対策として作成直後に再読し、先行する別ユーザーが存在すれば最古を使う。
+        # 完全な冪等化には TransactWriteItems や email 専用テーブルが必要（既知の制限）。
+        existing = db_users.get_user_by_email(email)
+        if existing and existing["userId"] != user["userId"]:
+            # 先行ユーザーに連携してこちらが作ったレコードは孤立するが、
+            # username 衝突よりも安全な選択
+            db_users.link_oidc_provider(existing["userId"], body.provider, sub)
+            user = existing
 
     token = create_token({"sub": user["userId"], "username": user["username"]})
     return {"access_token": token, "token_type": "bearer"}
