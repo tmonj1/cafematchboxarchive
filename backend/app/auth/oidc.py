@@ -7,9 +7,14 @@ _jwks_cache: dict = {}
 _CACHE_TTL = 3600  # 1時間
 
 
-def _get_openid_config(issuer: str) -> dict:
-    """OPの OpenID Configuration を取得する。"""
-    url = issuer.rstrip("/") + "/.well-known/openid-configuration"
+def _get_openid_config(provider_config: dict) -> dict:
+    """OPの OpenID Configuration を取得する。
+
+    discovery_url が指定されていればそちらを使用（Docker 内部ホスト名等）。
+    なければ issuer から導出する。
+    """
+    base = provider_config.get("discovery_url") or provider_config["issuer"]
+    url = base.rstrip("/") + "/.well-known/openid-configuration"
     resp = httpx.get(url, timeout=10)
     resp.raise_for_status()
     return resp.json()
@@ -48,7 +53,7 @@ def exchange_code(
         ValueError: token_endpoint エラー、id_token 未包含
         JWTError: IDトークンの署名・iss・aud・exp 検証失敗
     """
-    oidc_config = _get_openid_config(provider_config["issuer"])
+    oidc_config = _get_openid_config(provider_config)
     token_endpoint = oidc_config["token_endpoint"]
     jwks_uri = oidc_config["jwks_uri"]
 
