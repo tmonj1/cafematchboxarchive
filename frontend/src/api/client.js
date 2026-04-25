@@ -42,6 +42,16 @@ export const api = {
     request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
   deleteAccount: () =>
     request('/auth/account', { method: 'DELETE' }),
+  oidcCallback: (code, codeVerifier, redirectUri, provider) =>
+    request('/auth/oidc/callback', {
+      method: 'POST',
+      body: JSON.stringify({
+        code,
+        code_verifier: codeVerifier,
+        redirect_uri: redirectUri,
+        provider,
+      }),
+    }),
 
   // マッチ箱
   listMatchboxes: (params = {}) => {
