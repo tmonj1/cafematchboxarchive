@@ -6,6 +6,7 @@ import { CafeDetail } from './screens/CafeDetail.jsx';
 import { EditScreen } from './screens/EditScreen.jsx';
 import { AccountScreen } from './screens/AccountScreen.jsx';
 import { AboutScreen } from './screens/AboutScreen.jsx';
+import { OidcCallbackScreen } from './screens/OidcCallbackScreen.jsx';
 
 const PALETTES = {
   stone: {
@@ -20,7 +21,12 @@ const PALETTES = {
 
 function AppInner() {
   const { user } = useAuth();
-  const [stack, setStack] = useState([{ screen: 'public' }]);
+  const [stack, setStack] = useState(() => {
+    if (window.location.pathname === '/oidc-callback') {
+      return [{ screen: 'oidc-callback' }];
+    }
+    return [{ screen: 'public' }];
+  });
   const [theme] = useState(PALETTES.stone);
   const [layout] = useState('mosaic');
   const [isDesktop, setIsDesktop] = useState(window.innerWidth > 680);
@@ -80,6 +86,9 @@ function AppInner() {
       break;
     case 'about':
       screenEl = <AboutScreen {...shared} />;
+      break;
+    case 'oidc-callback':
+      screenEl = <OidcCallbackScreen {...shared} />;
       break;
     default:
       screenEl = <div style={{ padding: 40 }}>404</div>;
