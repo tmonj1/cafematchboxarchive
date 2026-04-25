@@ -134,31 +134,6 @@ async def test_oidc_callback_missing_sub(client, oidc_env):
 
 
 @pytest.mark.asyncio
-async def test_oidc_callback_links_local_user_by_username(client, oidc_env):
-    """username=emailのローカルユーザーがOIDCログインで連携される。"""
-    from passlib.context import CryptContext
-    from app.db import users as db_users
-
-    _pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    email = "localuser@example.com"
-    db_users.create_user(email, _pwd.hash("password123"))
-
-    with patch("app.api.auth_oidc.oidc_mod.exchange_code",
-               return_value={"sub": "oidc-sub-local", "email": email, "name": "Local User"}):
-        resp = await client.post("/api/auth/oidc/callback", json={
-            "code": "code",
-            "code_verifier": "v",
-            "redirect_uri": REDIRECT_URI,
-            "provider": "keycloak",
-        })
-    assert resp.status_code == 200
-
-    user = db_users.get_user_by_username(email)
-    assert user is not None
-    assert any(p["provider"] == "keycloak" for p in user.get("oidcProviders", []))
-
-
-@pytest.mark.asyncio
 async def test_oidc_callback_invalid_redirect_uri(client, oidc_env):
     """allowed_redirect_uris に含まれない redirect_uri は 400 を返す。"""
     resp = await client.post("/api/auth/oidc/callback", json={

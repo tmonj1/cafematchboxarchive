@@ -53,8 +53,10 @@ def oidc_callback(body: OidcCallbackRequest):
 
     display_name = claims.get("name", email)
 
-    # email-index で検索し、なければ username=email のローカルユーザーも確認する
-    user = db_users.get_user_by_email(email) or db_users.get_user_by_username(email)
+    # email-index のみで検索する。username による fallback は行わない。
+    # username=email のローカルユーザーと紐付けると、第三者が事前に同名の
+    # username を登録してアカウントを乗っ取れるため fail-closed とする。
+    user = db_users.get_user_by_email(email)
     if user:
         db_users.link_oidc_provider(user["userId"], body.provider, sub)
     else:
