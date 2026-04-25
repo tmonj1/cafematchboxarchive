@@ -1,8 +1,11 @@
+import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
 from botocore.exceptions import ClientError
 from app.db.client import get_dynamodb_resource
+
+logger = logging.getLogger(__name__)
 
 
 TABLE_NAME = "users"
@@ -48,14 +51,28 @@ def delete_user(user_id: str) -> None:
 
 
 def get_user_by_email(email: str) -> Optional[dict]:
-    """email で検索してユーザーを返す。見つからなければ None。"""
+    """email で検索してユーザーを返す。見つからなければ None。
+
+    GSI の Query 結果順は保証されないため、複数件ヒットした場合は
+    createdAt で昇順ソートして最古のレコードを返す。
+    通常は 1 件のみ返るが、並列コールバックによる重複作成が発生した場合に備える。
+    """
     resp = _table().query(
         IndexName="email-index",
         KeyConditionExpression="email = :e",
         ExpressionAttributeValues={":e": email},
     )
     items = resp.get("Items", [])
-    return items[0] if items else None
+    if not items:
+        return None
+    if len(items) > 1:
+        logger.warning(
+            "get_user_by_email: %d records found for email=%s; returning oldest",
+            len(items),
+            email,
+        )
+        items = sorted(items, key=lambda u: u.get("createdAt", ""))
+    return items[0]
 
 
 def create_oidc_user(email: str, display_name: str, provider: str, sub: str) -> dict:
