@@ -25,8 +25,10 @@ def oidc_callback(body: OidcCallbackRequest):
 
     provider_config = providers[body.provider]
 
-    allowed = provider_config.get("allowed_redirect_uris", [])
-    if allowed and body.redirect_uri not in allowed:
+    allowed = provider_config.get("allowed_redirect_uris")
+    if not isinstance(allowed, list) or not allowed:
+        raise HTTPException(status_code=500, detail="OIDC provider redirect URIs are not configured")
+    if body.redirect_uri not in allowed:
         raise HTTPException(status_code=400, detail="redirect_uri not allowed")
 
     try:

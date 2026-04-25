@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
+from botocore.exceptions import ClientError
 from app.db.client import get_dynamodb_resource
 
 
@@ -74,16 +75,23 @@ def create_oidc_user(email: str, display_name: str, provider: str, sub: str) -> 
 
 
 def link_oidc_provider(user_id: str, provider: str, sub: str) -> None:
-    """既存ユーザーにOIDCプロバイダーを連携する。既に連携済みならスキップ。"""
-    user = get_user_by_id(user_id)
-    if not user:
-        return
-    providers = user.get("oidcProviders", [])
-    if any(p["provider"] == provider and p["sub"] == sub for p in providers):
-        return
-    providers.append({"provider": provider, "sub": sub})
-    _table().update_item(
-        Key={"userId": user_id},
-        UpdateExpression="SET oidcProviders = :p",
-        ExpressionAttributeValues={":p": providers},
-    )
+    """既存ユーザーにOIDCプロバイダーを連携する。既に連携済みならスキップ。
+
+    list_append + if_not_exists による原子的更新でレースコンディションを防ぐ。
+    """
+    new_entry = {"provider": provider, "sub": sub}
+    try:
+        _table().update_item(
+            Key={"userId": user_id},
+            UpdateExpression="SET oidcProviders = list_append(if_not_exists(oidcProviders, :empty), :new)",
+            ConditionExpression="attribute_exists(userId) AND NOT contains(oidcProviders, :entry)",
+            ExpressionAttributeValues={
+                ":empty": [],
+                ":new": [new_entry],
+                ":entry": new_entry,
+            },
+        )
+    except ClientError as e:
+        if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
+            raise
+        # ConditionalCheckFailed = 既に連携済みなのでスキップ

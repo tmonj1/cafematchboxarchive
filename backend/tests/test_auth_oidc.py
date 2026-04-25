@@ -1,14 +1,18 @@
+import json
 from unittest.mock import patch
 import pytest
 
 
 FAKE_CLAIMS = {"sub": "oidc-sub-001", "email": "user@example.com", "name": "OIDC User"}
 REDIRECT_URI = "http://localhost:5173/oidc-callback"
-OIDC_PROVIDERS_ENV = (
-    '{"keycloak":{"client_id":"cma-frontend","client_secret":"",'
-    '"issuer":"http://keycloak.test/realms/cma",'
-    f'"allowed_redirect_uris":["{REDIRECT_URI}"]}}}}'
-)
+OIDC_PROVIDERS_ENV = json.dumps({
+    "keycloak": {
+        "client_id": "cma-frontend",
+        "client_secret": "",
+        "issuer": "http://keycloak.test/realms/cma",
+        "allowed_redirect_uris": [REDIRECT_URI],
+    }
+})
 
 
 @pytest.fixture
@@ -165,3 +169,23 @@ async def test_oidc_callback_invalid_redirect_uri(client, oidc_env):
     })
     assert resp.status_code == 400
     assert "redirect_uri" in resp.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_oidc_callback_missing_allowed_redirect_uris(client, monkeypatch):
+    """allowed_redirect_uris が未設定のプロバイダーには 500 を返す（fail-closed）。"""
+    env_no_uris = json.dumps({
+        "keycloak": {
+            "client_id": "cma-frontend",
+            "client_secret": "",
+            "issuer": "http://keycloak.test/realms/cma",
+        }
+    })
+    monkeypatch.setenv("OIDC_PROVIDERS", env_no_uris)
+    resp = await client.post("/api/auth/oidc/callback", json={
+        "code": "code",
+        "code_verifier": "v",
+        "redirect_uri": REDIRECT_URI,
+        "provider": "keycloak",
+    })
+    assert resp.status_code == 500
