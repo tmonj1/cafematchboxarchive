@@ -70,8 +70,10 @@
 ### アカウント連携ロジック
 
 1. IDトークンの `email` で `email-index` を検索
-2. ヒット → 既存ユーザーの `oidcProviders` に `{provider, sub}` を追記（重複はスキップ）
+2. ヒット（OIDCユーザーまたはemailを保持する既存ユーザー） → `oidcProviders` に `{provider, sub}` を追記（重複はスキップ）
 3. ミス → `username=email`, `displayName=name`, `oidcProviders=[{provider, sub}]`, `passwordHash=null` で新規作成
+
+**注意**: `create_user`（username/passwordで作成したローカルユーザー）は `email` 属性を保存しないため、`email-index` にヒットせず自動連携されない。これはセキュリティ上の意図的な設計（fail-closed）であり、第三者が同名のusernameを事前登録してアカウントを乗っ取るリスクを防ぐ。ローカルユーザーとOIDCユーザーを連携させたい場合は別途メール検証済みemailフィールドの導入が必要。
 
 ## バックエンド実装
 
@@ -164,7 +166,7 @@ OIDC_PROVIDERS = lambda: json.loads(get("OIDC_PROVIDERS", "{}"))
 
 ```
 # .env.local（ローカル開発）
-VITE_OIDC_PROVIDERS=[{"name":"keycloak","label":"Keycloakでログイン","clientId":"cma-frontend","issuer":"http://localhost:8080/realms/cma","redirectUri":"http://localhost:5173/oidc-callback"}]
+VITE_OIDC_PROVIDERS=[{"name":"keycloak","label":"Keycloakでログイン","clientId":"cma-frontend","issuer":"http://localhost:8080/realms/cma","authorizationEndpoint":"http://localhost:8080/realms/cma/protocol/openid-connect/auth","redirectUri":"http://localhost:5173/oidc-callback"}]
 ```
 
 ## ローカル開発環境（Keycloak）
@@ -194,10 +196,19 @@ keycloak:
    - Web origins: `http://localhost:5173`
 4. テストユーザーを作成（email必須）
 
+### Keycloak Frontend URL の設定（重要）
+
+Keycloak が Docker 内で動作する場合、デフォルトでは `iss` クレームが内部ホスト名（`keycloak:8080`）ではなくリクエスト元のURL（`localhost:8080`）ベースになる。バックエンドの `issuer` はこの `iss` と一致させる必要がある。
+
+- Keycloak 管理画面 → Realm settings → Frontend URL を `http://localhost:8080` に設定する
+- これにより `iss=http://localhost:8080/realms/cma` となり、バックエンドの設定と一致する
+
 ### バックエンド環境変数（`.env`）
 
 ```
-OIDC_PROVIDERS={"keycloak":{"client_id":"cma-frontend","client_secret":"","issuer":"http://keycloak:8080/realms/cma"}}
+# issuer: Keycloakが発行するトークンのiss（ブラウザからアクセスするURL）
+# discovery_url: バックエンドがDockerネットワーク内からopenid-configを取得するURL
+OIDC_PROVIDERS={"keycloak":{"client_id":"cma-frontend","client_secret":"","issuer":"http://localhost:8080/realms/cma","discovery_url":"http://keycloak:8080/realms/cma","allowed_redirect_uris":["http://localhost:5173/oidc-callback"]}}
 ```
 
 ※ パブリッククライアントのため `client_secret` は空文字でよい。
