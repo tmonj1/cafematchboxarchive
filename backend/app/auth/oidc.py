@@ -71,17 +71,21 @@ def exchange_code(
     if not resp.is_success:
         raise ValueError(f"Token endpoint error: {resp.status_code} {resp.text}")
 
-    id_token = resp.json().get("id_token")
+    token_response = resp.json()
+    id_token = token_response.get("id_token")
     if not id_token:
         raise ValueError("id_token not found in token response")
+    access_token = token_response.get("access_token")
 
     jwks = _get_jwks(jwks_uri)
     # python-jose は JWKS dict を渡すと kid で自動的に適切な鍵を選択する
+    # access_token を渡すことで IDトークンの at_hash クレームを検証できる
     payload = jwt.decode(
         id_token,
         jwks,
         algorithms=["RS256"],
         audience=provider_config["client_id"],
         issuer=provider_config["issuer"],
+        access_token=access_token,
     )
     return payload
