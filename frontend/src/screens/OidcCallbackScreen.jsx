@@ -7,18 +7,24 @@ export function OidcCallbackScreen({ nav, theme }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    function clearCallbackQuery() {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
     async function handleCallback() {
       const params = new URLSearchParams(window.location.search);
       const code = params.get('code');
       const returnedState = params.get('state');
 
       if (!code || !returnedState) {
+        clearCallbackQuery();
         setError('認証パラメータが不正です');
         return;
       }
 
       const saved = loadOidcState();
       if (!saved || saved.state !== returnedState) {
+        clearCallbackQuery();
         setError('stateが一致しません。再度ログインしてください');
         return;
       }
@@ -27,15 +33,17 @@ export function OidcCallbackScreen({ nav, theme }) {
       const providers = getOidcProviders();
       const providerConfig = providers.find(p => p.name === providerName);
       if (!providerConfig) {
+        clearCallbackQuery();
         setError('プロバイダー設定が見つかりません');
         return;
       }
 
       try {
         await loginWithOidc(code, codeVerifier, providerConfig.redirectUri, providerName);
-        window.history.replaceState({}, '', '/');
+        clearCallbackQuery();
         nav('public');
       } catch (e) {
+        clearCallbackQuery();
         setError(e.message || 'ログインに失敗しました');
       }
     }

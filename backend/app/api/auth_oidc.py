@@ -41,10 +41,14 @@ def oidc_callback(body: OidcCallbackRequest):
     if not email:
         raise HTTPException(status_code=400, detail="email claim missing from ID token")
 
-    display_name = claims.get("name", email)
-    sub = claims.get("sub", "")
+    sub = claims.get("sub")
+    if not sub:
+        raise HTTPException(status_code=400, detail="sub claim missing from ID token")
 
-    user = db_users.get_user_by_email(email)
+    display_name = claims.get("name", email)
+
+    # email-index で検索し、なければ username=email のローカルユーザーも確認する
+    user = db_users.get_user_by_email(email) or db_users.get_user_by_username(email)
     if user:
         db_users.link_oidc_provider(user["userId"], body.provider, sub)
     else:
