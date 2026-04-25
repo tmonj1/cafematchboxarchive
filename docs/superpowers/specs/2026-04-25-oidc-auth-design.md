@@ -72,8 +72,8 @@
 ### アカウント連携ロジック
 
 1. IDトークンの `email` で `email-index` を検索
-2. ヒット（OIDCユーザーまたはemailを保持する既存ユーザー） → `oidcProviders` に `{provider, sub}` を追記（重複はスキップ）
-3. ミス → `username=email`, `displayName=name`, `oidcProviders=[{provider, sub}]`, `passwordHash=null` で新規作成
+2. ヒット（OIDCユーザーまたはemailを保持する既存ユーザー） → `oidcProviders` に `provider: sub` を追加（重複はスキップ）
+3. ミス → `username=email`, `displayName=name`, `oidcProviders={provider: sub}`, `passwordHash=null` で新規作成
 
 **注意**: `create_user`（username/passwordで作成したローカルユーザー）は `email` 属性を保存しないため、`email-index` にヒットせず自動連携されない。これはセキュリティ上の意図的な設計（fail-closed）であり、第三者が同名のusernameを事前登録してアカウントを乗っ取るリスクを防ぐ。ローカルユーザーとOIDCユーザーを連携させたい場合は別途メール検証済みemailフィールドの導入が必要。
 
