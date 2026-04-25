@@ -94,4 +94,8 @@ def link_oidc_provider(user_id: str, provider: str, sub: str) -> None:
     except ClientError as e:
         if e.response["Error"]["Code"] != "ConditionalCheckFailedException":
             raise
-        # ConditionalCheckFailed = 既に連携済みなのでスキップ
+        # ConditionalCheckFailed の原因を区別する:
+        # - userId が存在しない → 不整合なのでエラー
+        # - 既に連携済み → 正常スキップ
+        if get_user_by_id(user_id) is None:
+            raise ValueError(f"user not found: {user_id}") from e

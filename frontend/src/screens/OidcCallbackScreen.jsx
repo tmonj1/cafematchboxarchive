@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { loadOidcState, getOidcProviders } from '../auth/oidc.js';
 
 export function OidcCallbackScreen({ nav, theme }) {
   const { loginWithOidc } = useAuth();
   const [error, setError] = useState('');
+  const handledRef = useRef(false);
 
   useEffect(() => {
     function clearCallbackQuery() {
@@ -12,6 +13,10 @@ export function OidcCallbackScreen({ nav, theme }) {
     }
 
     async function handleCallback() {
+      // React StrictMode の開発環境二重実行を防ぐ
+      if (handledRef.current) return;
+      handledRef.current = true;
+
       const params = new URLSearchParams(window.location.search);
       const code = params.get('code');
       const returnedState = params.get('state');

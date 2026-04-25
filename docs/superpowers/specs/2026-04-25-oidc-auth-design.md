@@ -141,7 +141,7 @@ OIDC_PROVIDERS = lambda: json.loads(get("OIDC_PROVIDERS", "{}"))
 - URLから `code`・`state` を取得
 - sessionStorageのstateと照合（CSRF防止。不一致なら即エラー）
 - `loginWithOidc()` を呼び出し
-- 成功 → `nav('gallery')` でトップ画面へ
+- 成功 → `nav('public')` でトップ画面へ
 - 失敗 → エラーメッセージ表示
 
 ### 変更ファイル
