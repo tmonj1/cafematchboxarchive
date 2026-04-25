@@ -123,3 +123,10 @@ def test_link_oidc_provider_skips_duplicate(aws_mock):
     link_oidc_provider(user["userId"], "keycloak", "sub-004")  # 同じプロバイダー・sub
     updated = get_user_by_id(user["userId"])
     assert updated["oidcProviders"] == {"keycloak": "sub-004"}  # 重複なし
+
+
+def test_link_oidc_provider_rejects_different_sub(aws_mock):
+    """異なる sub が登録済みの場合は ValueError を送出する（アカウント乗っ取り防止）。"""
+    user = create_oidc_user("eve@example.com", "Eve", "keycloak", "sub-005")
+    with pytest.raises(ValueError, match="already linked to a different sub"):
+        link_oidc_provider(user["userId"], "keycloak", "sub-999")

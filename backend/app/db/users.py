@@ -95,17 +95,24 @@ def create_oidc_user(email: str, display_name: str, provider: str, sub: str) -> 
 
 
 def link_oidc_provider(user_id: str, provider: str, sub: str) -> None:
-    """既存ユーザーにOIDCプロバイダーを連携する。既に連携済みならスキップ。
+    """既存ユーザーにOIDCプロバイダーを連携する。
 
     oidcProviders は {provider_name: sub} の Map 形式。
-    attribute_not_exists による原子的更新でレースコンディションと重複を防ぐ。
+    条件付き更新により以下を原子的に保証する:
+    - 未連携 → 追加
+    - 同一 sub で既に連携済み → 冪等スキップ（正常）
+    - 異なる sub が既に登録済み → ValueError（アカウント乗っ取り防止）
     DynamoDB の contains はリスト内 Map に対して動作しないため Map 形式を採用。
     """
     try:
         _table().update_item(
             Key={"userId": user_id},
             UpdateExpression="SET oidcProviders.#p = :s",
-            ConditionExpression="attribute_exists(userId) AND attribute_not_exists(oidcProviders.#p)",
+            # 未連携 OR 同一 sub の場合のみ更新を許可する
+            ConditionExpression=(
+                "attribute_exists(userId) AND "
+                "(attribute_not_exists(oidcProviders.#p) OR oidcProviders.#p = :s)"
+            ),
             ExpressionAttributeNames={"#p": provider},
             ExpressionAttributeValues={":s": sub},
         )
@@ -114,6 +121,12 @@ def link_oidc_provider(user_id: str, provider: str, sub: str) -> None:
             raise
         # ConditionalCheckFailed の原因を区別する:
         # - userId が存在しない → 不整合なのでエラー
-        # - oidcProviders.{provider} が既に存在 → 連携済みのためスキップ
-        if get_user_by_id(user_id) is None:
+        # - oidcProviders.{provider} に異なる sub が存在 → アカウント乗っ取り試行
+        user = get_user_by_id(user_id)
+        if user is None:
             raise ValueError(f"user not found: {user_id}") from e
+        existing_sub = (user.get("oidcProviders") or {}).get(provider)
+        raise ValueError(
+            f"provider '{provider}' is already linked to a different sub "
+            f"(existing: {existing_sub!r}, new: {sub!r})"
+        ) from e
