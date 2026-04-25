@@ -46,6 +46,19 @@ services:
           ]' \
           --endpoint-url http://dynamodb:8000 2>/dev/null || echo "users table already exists"
 
+        # 既存テーブルに email-index が無い場合は追加する（旧バージョンからのアップグレード対応）
+        aws dynamodb update-table \
+          --table-name users \
+          --attribute-definitions AttributeName=email,AttributeType=S \
+          --global-secondary-index-updates '[{
+            "Create": {
+              "IndexName": "email-index",
+              "KeySchema": [{"AttributeName": "email", "KeyType": "HASH"}],
+              "Projection": {"ProjectionType": "ALL"}
+            }
+          }]' \
+          --endpoint-url http://dynamodb:8000 2>/dev/null || echo "email-index already exists"
+
         aws dynamodb create-table \
           --table-name matchboxes \
           --attribute-definitions \
