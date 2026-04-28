@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Cafe Matchbox Archive - Backend (Lambda + API Gateway)
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 30
+    MemorySize: 256
+
+Resources:
+  # Lambda + API Gateway
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: cafematchbox-api
+      CodeUri: ../backend/
+      Handler: app.main.handler
+      Environment:
+        Variables:
+          DYNAMODB_ENDPOINT: ""
+          S3_BUCKET: !Ref ImagesBucket
+          JWT_SECRET: "{{resolve:ssm:/cafematchbox/jwt-secret}}"
+          OIDC_PROVIDERS: "{{resolve:ssm:/cafematchbox/oidc-providers}}"
+          CORS_ORIGINS: "{{resolve:ssm:/cafematchbox/cors-origins}}"
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MatchboxesTable
+        - S3CrudPolicy:
+            BucketName: !Ref ImagesBucket
+      Events:
+        ApiProxy:
+          Type: HttpApi
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+
+  # DynamoDB: users
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: users
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: username
+          AttributeType: S
+        - AttributeName: email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: username-index
+          KeySchema:
+            - AttributeName: username
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: email-index
+          KeySchema:
+            - AttributeName: email
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  # DynamoDB: matchboxes
+  MatchboxesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: matchboxes
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: matchboxId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: matchboxId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: userId-index
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  # S3: 画像ストレージ
+  ImagesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: cafematchbox-images
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
