@@ -26,4 +26,16 @@ S3_SECRET_KEY = lambda: get("S3_SECRET_KEY", "minioadmin")
 OIDC_PROVIDERS = lambda: json.loads(get("OIDC_PROVIDERS", "{}"))
 
 # CORS
-CORS_ORIGINS = lambda: [o.strip() for o in get("CORS_ORIGINS", "http://localhost:5173").split(",")]
+def _parse_cors_origins() -> list[str]:
+    raw = os.environ.get("CORS_ORIGINS")
+    if raw is None:
+        return ["http://localhost:5173"]
+    origins = [o.strip() for o in raw.split(",") if o.strip()]
+    if not origins:
+        return ["http://localhost:5173"]
+    if "*" in origins:
+        raise ValueError('CORS_ORIGINS must not contain "*" when credentials are allowed.')
+    return origins
+
+
+CORS_ORIGINS = _parse_cors_origins
