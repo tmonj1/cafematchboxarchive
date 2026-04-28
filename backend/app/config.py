@@ -24,3 +24,6 @@ S3_SECRET_KEY = lambda: get("S3_SECRET_KEY", "minioadmin")
 
 # OIDC
 OIDC_PROVIDERS = lambda: json.loads(get("OIDC_PROVIDERS", "{}"))
+
+# CORS
+CORS_ORIGINS = lambda: [o.strip() for o in get("CORS_ORIGINS", "http://localhost:5173").split(",")]
