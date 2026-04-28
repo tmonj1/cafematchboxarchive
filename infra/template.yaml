@@ -19,6 +19,8 @@ Resources:
       Environment:
         Variables:
           DYNAMODB_ENDPOINT: ""
+          USERS_TABLE: !Ref UsersTable
+          MATCHBOXES_TABLE: !Ref MatchboxesTable
           S3_BUCKET: !Ref ImagesBucket
           JWT_SECRET: "{{resolve:ssm-secure:/cafematchbox/jwt-secret}}"
           OIDC_PROVIDERS: "{{resolve:ssm:/cafematchbox/oidc-providers}}"
@@ -46,7 +48,7 @@ Resources:
   UsersTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: users
+      TableName: !Sub "${AWS::StackName}-users"
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: userId
@@ -76,7 +78,7 @@ Resources:
   MatchboxesTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: matchboxes
+      TableName: !Sub "${AWS::StackName}-matchboxes"
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: matchboxId

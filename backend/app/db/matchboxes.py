@@ -3,13 +3,11 @@ from datetime import datetime, timezone
 from typing import Optional, List
 from boto3.dynamodb.conditions import Key
 from app.db.client import get_dynamodb_resource
-
-
-TABLE_NAME = "matchboxes"
+from app import config
 
 
 def _table():
-    return get_dynamodb_resource().Table(TABLE_NAME)
+    return get_dynamodb_resource().Table(config.MATCHBOXES_TABLE())
 
 
 def _now() -> str:
