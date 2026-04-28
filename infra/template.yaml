@@ -20,7 +20,7 @@ Resources:
         Variables:
           DYNAMODB_ENDPOINT: ""
           S3_BUCKET: !Ref ImagesBucket
-          JWT_SECRET: "{{resolve:ssm:/cafematchbox/jwt-secret}}"
+          JWT_SECRET: "{{resolve:ssm-secure:/cafematchbox/jwt-secret}}"
           OIDC_PROVIDERS: "{{resolve:ssm:/cafematchbox/oidc-providers}}"
           CORS_ORIGINS: "{{resolve:ssm:/cafematchbox/cors-origins}}"
       Policies:
@@ -35,6 +35,11 @@ Resources:
           Type: HttpApi
           Properties:
             Path: /{proxy+}
+            Method: ANY
+        ApiRoot:
+          Type: HttpApi
+          Properties:
+            Path: /
             Method: ANY
 
   # DynamoDB: users
@@ -93,7 +98,16 @@ Resources:
   ImagesBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: cafematchbox-images
+      BucketName: !Sub "${AWS::StackName}-${AWS::AccountId}-images"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
 
 Outputs:
   ApiEndpoint:
