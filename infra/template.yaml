@@ -13,7 +13,7 @@ Resources:
   ApiFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: cafematchbox-api
+      FunctionName: !Sub "${AWS::StackName}-api"
       CodeUri: ../backend/
       Handler: app.main.handler
       Environment:
