@@ -65,7 +65,8 @@ def calc_crop_box(orig_w: int, orig_h: int, ratio: Optional[tuple[float, float]]
 def make_output_filename(photo: osxphotos.PhotoInfo, crop_w: int, crop_h: int) -> str:
     date_str = photo.date.strftime("%Y%m%d_%H%M%S")
     stem = Path(photo.original_filename).stem
-    return f"{date_str}_{stem}_{crop_w}x{crop_h}.png"
+    uid = photo.uuid[:8]
+    return f"{date_str}_{stem}_{crop_w}x{crop_h}_{uid}.png"
 
 
 def process_photo(
@@ -83,14 +84,22 @@ def process_photo(
             convert_to_jpeg=True,
         )
         results = photo.export(str(tmp_path), options=options)
-        if not results.exported:
-            print(f"  [エラー] エクスポート失敗: {photo.original_filename}")
+        image_exts = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".tiff", ".bmp"}
+        exported_images = [p for p in results.exported if Path(p).suffix.lower() in image_exts]
+        if not exported_images:
+            print(f"  [エラー] 画像ファイルのエクスポート失敗: {photo.original_filename}")
             return "error"
 
-        exported_file = Path(results.exported[0])
-        with Image.open(exported_file) as raw:
+        try:
+            exported_file = Path(exported_images[0])
+            raw_img = Image.open(exported_file)
+        except Exception as e:
+            print(f"  [エラー] 画像読み込み失敗: {photo.original_filename} ({e})")
+            return "error"
+
+        with raw_img:
             # EXIF Orientationに従って回転・反転を適用してから処理する
-            img = ImageOps.exif_transpose(raw)
+            img = ImageOps.exif_transpose(raw_img)
             orig_w, orig_h = img.size
             box = calc_crop_box(orig_w, orig_h, ratio)
             crop_w = box[2] - box[0]
@@ -132,8 +141,14 @@ def main() -> None:
         metavar="W:H",
         help="トリミング比率（例: 1:1, 4:3）。省略時は縦横50%%のデフォルトクロップ",
     )
+    def positive_int(value: str) -> int:
+        n = int(value)
+        if n <= 0:
+            raise argparse.ArgumentTypeError(f"正の整数を指定してください: {value}")
+        return n
+
     parser.add_argument(
-        "--max-count", type=int, default=None, metavar="N", help="処理する最大ファイル数（省略時は全件）"
+        "--max-count", type=positive_int, default=None, metavar="N", help="処理する最大ファイル数（省略時は全件）"
     )
     parser.add_argument(
         "--dry-run", action="store_true", help="実際には保存せず処理対象を表示する"
