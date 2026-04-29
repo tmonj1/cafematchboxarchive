@@ -62,8 +62,11 @@ export function EditScreen({ cafe, nav, theme, isDesktop }) {
     setUploadingImages(true);
     try {
       const result = await api.uploadImage(cafe.matchboxId, file);
-      set('imageKeys', [...(draft.imageKeys || []), result.key]);
-      set('imageUrls', [...(draft.imageUrls || []), result.url]);
+      setDraft(prev => ({
+        ...prev,
+        imageKeys: [...(prev.imageKeys || []), result.key],
+        imageUrls: [...(prev.imageUrls || []), result.url],
+      }));
     } finally {
       setUploadingImages(false);
     }
@@ -71,10 +74,15 @@ export function EditScreen({ cafe, nav, theme, isDesktop }) {
 
   const handleImageDelete = async (key) => {
     if (!cafe?.matchboxId) return;
-    const idx = (draft.imageKeys || []).indexOf(key);
     await api.deleteImage(cafe.matchboxId, key);
-    set('imageKeys', draft.imageKeys.filter(k => k !== key));
-    set('imageUrls', (draft.imageUrls || []).filter((_, i) => i !== idx));
+    setDraft(prev => {
+      const idx = (prev.imageKeys || []).indexOf(key);
+      return {
+        ...prev,
+        imageKeys: prev.imageKeys.filter(k => k !== key),
+        imageUrls: (prev.imageUrls || []).filter((_, i) => i !== idx),
+      };
+    });
   };
 
   const previewSection = (
