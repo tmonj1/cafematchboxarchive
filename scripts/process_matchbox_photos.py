@@ -76,6 +76,41 @@ def make_output_filename(photo: osxphotos.PhotoInfo, crop_w: int, crop_h: int) -
     return f"{date_str}_{stem}_{crop_w}x{crop_h}_{uid}.png"
 
 
+def _crop_and_save(
+    photo: osxphotos.PhotoInfo,
+    raw_img: "Image.Image",
+    output_dir: Path,
+    ratio: Optional[tuple[float, float]],
+) -> str:
+    """トリミング・メタデータ削除・PNG保存。戻り値: "processed" | "skipped"."""
+    with raw_img:
+        # EXIF Orientationに従って回転・反転を適用してから処理する
+        img = ImageOps.exif_transpose(raw_img)
+        orig_w, orig_h = img.size
+        box = calc_crop_box(orig_w, orig_h, ratio)
+        crop_w = box[2] - box[0]
+        crop_h = box[3] - box[1]
+
+        out_name = make_output_filename(photo, crop_w, crop_h)
+        out_path = output_dir / out_name
+
+        if out_path.exists():
+            print(f"  [スキップ] {out_name}")
+            return "skipped"
+
+        cropped = img.crop(box)
+        # パレットモードはRGB/RGBAに変換してから転写し、色壊れを防ぐ
+        if cropped.mode not in ("RGB", "RGBA", "L", "LA"):
+            cropped = cropped.convert("RGBA" if "A" in cropped.getbands() else "RGB")
+        # paste()でピクセルのみ転写し、EXIFなどのメタデータを除去する
+        clean = Image.new(cropped.mode, cropped.size)
+        clean.paste(cropped)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        clean.save(out_path, format="PNG")
+        print(f"  [保存] {out_name}  ({orig_w}x{orig_h} → {crop_w}x{crop_h})")
+        return "processed"
+
+
 def process_photo(
     photo: osxphotos.PhotoInfo,
     output_dir: Path,
@@ -95,6 +130,19 @@ def process_photo(
         print(f"  [dry-run] {out_name}  ({orig_w}x{orig_h} → {crop_w}x{crop_h})")
         return "dry_run"
 
+    # オリジナルがiCloud未ダウンロードの場合はローカルのデリバティブ画像で代替
+    if photo.ismissing:
+        derivatives = photo.path_derivatives
+        if not derivatives:
+            print(f"  [エラー] ローカルに画像なし（iCloud未ダウンロード）: {photo.original_filename}")
+            return "error"
+        try:
+            raw_img = Image.open(Path(derivatives[0]))
+        except Exception as e:
+            print(f"  [エラー] 画像読み込み失敗: {photo.original_filename} ({e})")
+            return "error"
+        return _crop_and_save(photo, raw_img, output_dir, ratio)
+
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
 
@@ -111,38 +159,12 @@ def process_photo(
             return "error"
 
         try:
-            exported_file = Path(exported_images[0])
-            raw_img = Image.open(exported_file)
+            raw_img = Image.open(Path(exported_images[0]))
         except Exception as e:
             print(f"  [エラー] 画像読み込み失敗: {photo.original_filename} ({e})")
             return "error"
 
-        with raw_img:
-            # EXIF Orientationに従って回転・反転を適用してから処理する
-            img = ImageOps.exif_transpose(raw_img)
-            orig_w, orig_h = img.size
-            box = calc_crop_box(orig_w, orig_h, ratio)
-            crop_w = box[2] - box[0]
-            crop_h = box[3] - box[1]
-
-            out_name = make_output_filename(photo, crop_w, crop_h)
-            out_path = output_dir / out_name
-
-            if out_path.exists():
-                print(f"  [スキップ] {out_name}")
-                return "skipped"
-
-            cropped = img.crop(box)
-            # パレットモードはRGB/RGBAに変換してから転写し、色壊れを防ぐ
-            if cropped.mode not in ("RGB", "RGBA", "L", "LA"):
-                cropped = cropped.convert("RGBA" if cropped.getbands().__contains__("A") else "RGB")
-            # paste()でピクセルのみ転写し、EXIFなどのメタデータを除去する
-            clean = Image.new(cropped.mode, cropped.size)
-            clean.paste(cropped)
-            output_dir.mkdir(parents=True, exist_ok=True)
-            clean.save(out_path, format="PNG")
-            print(f"  [保存] {out_name}  ({orig_w}x{orig_h} → {crop_w}x{crop_h})")
-            return "processed"
+        return _crop_and_save(photo, raw_img, output_dir, ratio)
 
 
 def main() -> None:
