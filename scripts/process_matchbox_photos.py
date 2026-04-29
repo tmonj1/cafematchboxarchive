@@ -95,10 +95,12 @@ def _crop_and_save(
         out_name = make_output_filename(photo, crop_w, crop_h)
         out_path = output_dir / out_name
 
-        # 既存の .webp、または PNG 時代の同名 .png があればスキップ
-        if out_path.exists() or out_path.with_suffix(".png").exists():
+        if out_path.exists():
             print(f"  [スキップ] {out_name}")
             return "skipped"
+        png_path = out_path.with_suffix(".png")
+        if png_path.exists():
+            print(f"  [注意] 同名のPNGが存在します（不要なら削除してください）: {png_path.name}")
 
         cropped = img.crop(box)
         # パレットモードはRGB/RGBAに変換してから転写し、色壊れを防ぐ
@@ -108,7 +110,11 @@ def _crop_and_save(
         clean = Image.new(cropped.mode, cropped.size)
         clean.paste(cropped)
         output_dir.mkdir(parents=True, exist_ok=True)
-        clean.save(out_path, format="WEBP", lossless=True)
+        try:
+            clean.save(out_path, format="WEBP", lossless=True)
+        except Exception as e:
+            print(f"  [エラー] WebP保存失敗: {photo.original_filename} ({e})")
+            return "error"
         print(f"  [保存] {out_name}  ({orig_w}x{orig_h} → {crop_w}x{crop_h})")
         return "processed"
 
@@ -127,9 +133,12 @@ def process_photo(
         crop_w, crop_h = box[2] - box[0], box[3] - box[1]
         out_name = make_output_filename(photo, crop_w, crop_h)
         out_path = output_dir / out_name
-        if out_path.exists() or out_path.with_suffix(".png").exists():
+        if out_path.exists():
             print(f"  [スキップ] {out_name}")
             return "skipped"
+        png_path = out_path.with_suffix(".png")
+        if png_path.exists():
+            print(f"  [注意] 同名のPNGが存在します（不要なら削除してください）: {png_path.name}")
         print(f"  [dry-run] {out_name}  ({orig_w}x{orig_h} → {crop_w}x{crop_h})")
         return "dry_run"
 
