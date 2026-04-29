@@ -132,14 +132,19 @@ def process_photo(
 
     # オリジナルがiCloud未ダウンロードの場合はローカルのデリバティブ画像で代替
     if photo.ismissing:
-        derivatives = photo.path_derivatives
-        if not derivatives:
+        image_exts = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".tiff", ".bmp"}
+        derivative_images = [
+            p for p in photo.path_derivatives if Path(p).suffix.lower() in image_exts
+        ]
+        raw_img = None
+        for candidate in derivative_images:
+            try:
+                raw_img = Image.open(Path(candidate))
+                break
+            except Exception:
+                continue
+        if raw_img is None:
             print(f"  [エラー] ローカルに画像なし（iCloud未ダウンロード）: {photo.original_filename}")
-            return "error"
-        try:
-            raw_img = Image.open(Path(derivatives[0]))
-        except Exception as e:
-            print(f"  [エラー] 画像読み込み失敗: {photo.original_filename} ({e})")
             return "error"
         return _crop_and_save(photo, raw_img, output_dir, ratio)
 
