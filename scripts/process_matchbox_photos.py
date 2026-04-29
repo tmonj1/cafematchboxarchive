@@ -102,7 +102,8 @@ def process_photo(
         options = osxphotos.ExportOptions(
             convert_to_jpeg=True,
         )
-        results = photo.export(str(tmp_path), options=options)
+        exporter = osxphotos.PhotoExporter(photo)
+        results = exporter.export(tmp_path, options=options)
         image_exts = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".tiff", ".bmp"}
         exported_images = [p for p in results.exported if Path(p).suffix.lower() in image_exts]
         if not exported_images:
