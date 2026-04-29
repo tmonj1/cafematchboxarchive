@@ -39,5 +39,6 @@ class MatchboxResponse(BaseModel):
     closed: Optional[str]
     style: int
     imageKeys: List[str]
+    imageUrls: List[str] = []
     createdAt: str
     updatedAt: str

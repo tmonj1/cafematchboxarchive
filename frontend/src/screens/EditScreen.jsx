@@ -63,6 +63,7 @@ export function EditScreen({ cafe, nav, theme, isDesktop }) {
     try {
       const result = await api.uploadImage(cafe.matchboxId, file);
       set('imageKeys', [...(draft.imageKeys || []), result.key]);
+      set('imageUrls', [...(draft.imageUrls || []), result.url]);
     } finally {
       setUploadingImages(false);
     }
@@ -70,8 +71,10 @@ export function EditScreen({ cafe, nav, theme, isDesktop }) {
 
   const handleImageDelete = async (key) => {
     if (!cafe?.matchboxId) return;
+    const idx = (draft.imageKeys || []).indexOf(key);
     await api.deleteImage(cafe.matchboxId, key);
     set('imageKeys', draft.imageKeys.filter(k => k !== key));
+    set('imageUrls', (draft.imageUrls || []).filter((_, i) => i !== idx));
   };
 
   const previewSection = (
@@ -99,9 +102,9 @@ export function EditScreen({ cafe, nav, theme, isDesktop }) {
             {icons.upload(theme.sub)}
           </label>
         )}
-        {(draft.imageKeys || []).map(key => (
+        {(draft.imageKeys || []).map((key, i) => (
           <div key={key} style={{ position: 'relative', flexShrink: 0, width: 56, aspectRatio: '1 / 1.25' }}>
-            <img src={key} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 3 }} />
+            <img src={(draft.imageUrls || [])[i]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 3 }} />
             <div onClick={() => handleImageDelete(key)} style={{
               position: 'absolute', top: -6, right: -6,
               width: 18, height: 18, borderRadius: 9,

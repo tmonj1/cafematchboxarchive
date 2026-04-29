@@ -1,10 +1,16 @@
 from typing import Optional, List
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends
 from app.models.matchbox import MatchboxCreateRequest, MatchboxUpdateRequest, MatchboxResponse
 from app.db import matchboxes as db
+from app.storage.s3 import get_image_url
 from app.auth.jwt import get_current_user
 
 router = APIRouter()
+
+
+def _with_urls(mb: dict) -> dict:
+    mb["imageUrls"] = [get_image_url(k) for k in mb.get("imageKeys", [])]
+    return mb
 
 
 @router.get("", response_model=List[MatchboxResponse])
@@ -21,13 +27,13 @@ def list_matchboxes(tag: Optional[str] = None, q: Optional[str] = None):
             or q_lower in m.get("loc", "").lower()
             or q_lower in m.get("roman", "").lower()
         ]
-    return items
+    return [_with_urls(m) for m in items]
 
 
 @router.get("/mine", response_model=List[MatchboxResponse])
 def list_my_matchboxes(current_user: dict = Depends(get_current_user)):
     """認証ユーザー自身のマッチ箱一覧。"""
-    return db.list_matchboxes_by_user(current_user["sub"])
+    return [_with_urls(m) for m in db.list_matchboxes_by_user(current_user["sub"])]
 
 
 @router.get("/{matchbox_id}", response_model=MatchboxResponse)
@@ -35,17 +41,17 @@ def get_matchbox(matchbox_id: str):
     mb = db.get_matchbox(matchbox_id)
     if mb is None:
         raise HTTPException(status_code=404, detail="Matchbox not found")
-    return mb
+    return _with_urls(mb)
 
 
 @router.post("", response_model=MatchboxResponse, status_code=201)
 def create_matchbox(body: MatchboxCreateRequest, current_user: dict = Depends(get_current_user)):
-    return db.create_matchbox(
+    return _with_urls(db.create_matchbox(
         user_id=current_user["sub"],
         name=body.name, roman=body.roman or "", est=body.est or "",
         loc=body.loc or "", desc=body.desc or "", tags=body.tags or [],
         acquired=body.acquired or "", closed=body.closed, style=body.style or 0,
-    )
+    ))
 
 
 @router.put("/{matchbox_id}", response_model=MatchboxResponse)
@@ -59,7 +65,7 @@ def update_matchbox(
         raise HTTPException(status_code=404, detail="Matchbox not found")
     if mb["userId"] != current_user["sub"]:
         raise HTTPException(status_code=403, detail="Forbidden")
-    return db.update_matchbox(matchbox_id, body.model_dump(exclude_none=True))
+    return _with_urls(db.update_matchbox(matchbox_id, body.model_dump(exclude_none=True)))
 
 
 @router.delete("/{matchbox_id}", status_code=204)
