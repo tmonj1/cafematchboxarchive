@@ -44,17 +44,17 @@ def calc_crop_box(orig_w: int, orig_h: int, ratio: Optional[tuple[float, float]]
     cx, cy = orig_w // 2, orig_h // 2
 
     if ratio is None:
-        crop_w = int(orig_w * 0.5)
-        crop_h = int(orig_h * 0.5)
+        crop_w = max(1, int(orig_w * 0.5))
+        crop_h = max(1, int(orig_h * 0.5))
     else:
         rw, rh = ratio
         scale_by_w = orig_w / rw * rh
         scale_by_h = orig_h / rh * rw
         if scale_by_w <= orig_h:
             crop_w = orig_w
-            crop_h = int(scale_by_w)
+            crop_h = max(1, int(scale_by_w))
         else:
-            crop_w = int(scale_by_h)
+            crop_w = max(1, int(scale_by_h))
             crop_h = orig_h
 
     left = cx - crop_w // 2
@@ -78,9 +78,9 @@ def process_photo(
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
 
-        # サイズ確認のため一旦エクスポートが必要だが、ファイル名確定にサイズが必要なので先にエクスポート
+        # convert_to_jpeg=TrueでHEIC等をJPEGに変換してからエクスポートし、Pillowで確実に開けるようにする
         options = osxphotos.ExportOptions(
-            use_photos_export=False,
+            convert_to_jpeg=True,
         )
         results = photo.export(str(tmp_path), options=options)
         if not results.exported:
