@@ -161,6 +161,50 @@ npm test
 
 詳細は http://localhost:8000/docs (起動後) を参照してください。
 
+## マッチ箱写真処理スクリプト
+
+`scripts/process_matchbox_photos.py` は、Apple Photos のアルバムからマッチ箱の写真を取得し、中央トリミング・メタデータ削除・PNG変換を一括で行うユーティリティです（macOS 専用）。
+
+### 前提条件
+
+- macOS（Apple Photos ライブラリへのアクセスが必要）
+- Python 3.11 以上
+
+```bash
+pip install osxphotos Pillow
+```
+
+### 使い方
+
+```bash
+# 基本的な使い方（アルバム「マッチ箱」から全件処理）
+python scripts/process_matchbox_photos.py
+
+# アルバム名・出力先・トリミング比率を指定する
+python scripts/process_matchbox_photos.py \
+  --album "マッチ箱" \
+  --output ./output \
+  --ratio 4:3
+
+# 処理対象を確認するだけで保存しない（dry-run）
+python scripts/process_matchbox_photos.py --dry-run
+
+# 最大 10 枚だけ処理する
+python scripts/process_matchbox_photos.py --max-count 10
+```
+
+### オプション
+
+| オプション | デフォルト | 説明 |
+|-----------|-----------|------|
+| `--album` | `マッチ箱` | Apple Photos のアルバム名 |
+| `--output` | `scripts/images/` | 出力先ディレクトリ |
+| `--ratio W:H` | （省略時は縦横50%） | トリミング比率（例: `1:1`, `4:3`） |
+| `--max-count N` | 全件 | 処理する最大枚数 |
+| `--dry-run` | — | 保存せず処理対象のみ表示 |
+
+出力ファイル名は `YYYYMMDD_HHMMSS_<元ファイル名>_<幅>x<高さ>_<UUID8桁>.png` 形式で、既存ファイルは上書きせずスキップします。
+
 ## ライセンス
 
 [MIT License](LICENSE)
