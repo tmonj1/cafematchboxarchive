@@ -47,6 +47,8 @@ Resources:
   # DynamoDB: users
   UsersTable:
     Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       TableName: !Sub "${AWS::StackName}-users"
       BillingMode: PAY_PER_REQUEST
@@ -77,6 +79,8 @@ Resources:
   # DynamoDB: matchboxes
   MatchboxesTable:
     Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       TableName: !Sub "${AWS::StackName}-matchboxes"
       BillingMode: PAY_PER_REQUEST
@@ -99,6 +103,8 @@ Resources:
   # S3: 画像ストレージ
   ImagesBucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       BucketName: !Sub "${AWS::StackName}-${AWS::AccountId}-images"
       BucketEncryption:
