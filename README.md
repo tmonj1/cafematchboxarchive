@@ -171,26 +171,26 @@ npm test
 - Python 3.11 以上
 
 ```bash
-pip install osxphotos Pillow
+pip install -r scripts/requirements.txt
 ```
 
 ### 使い方
 
 ```bash
 # 基本的な使い方（アルバム「マッチ箱」から全件処理）
-python scripts/process_matchbox_photos.py
+python3 scripts/process_matchbox_photos.py
 
 # アルバム名・出力先・トリミング比率を指定する
-python scripts/process_matchbox_photos.py \
+python3 scripts/process_matchbox_photos.py \
   --album "マッチ箱" \
   --output ./output \
   --ratio 4:3
 
 # 処理対象を確認するだけで保存しない（dry-run）
-python scripts/process_matchbox_photos.py --dry-run
+python3 scripts/process_matchbox_photos.py --dry-run
 
 # 最大 10 枚だけ処理する
-python scripts/process_matchbox_photos.py --max-count 10
+python3 scripts/process_matchbox_photos.py --max-count 10
 ```
 
 ### オプション
