@@ -8,7 +8,7 @@
 # ///
 """マッチ箱写真処理スクリプト
 
-Apple Photosのアルバムから写真を取得し、中央トリミング・メタデータ削除・PNG変換を行う。
+Apple Photosのアルバムから写真を取得し、中央トリミング・メタデータ削除・WebP変換を行う。
 """
 
 import argparse
@@ -74,7 +74,7 @@ def make_output_filename(photo: osxphotos.PhotoInfo, crop_w: int, crop_h: int) -
     date_str = photo.date.strftime("%Y%m%d_%H%M%S")
     stem = Path(photo.original_filename).stem
     uid = photo.uuid[:8]
-    return f"{date_str}_{stem}_{crop_w}x{crop_h}_{uid}.png"
+    return f"{date_str}_{stem}_{crop_w}x{crop_h}_{uid}.webp"
 
 
 def _crop_and_save(
@@ -83,7 +83,7 @@ def _crop_and_save(
     output_dir: Path,
     ratio: Optional[tuple[float, float]],
 ) -> str:
-    """トリミング・メタデータ削除・PNG保存。戻り値: "processed" | "skipped"."""
+    """トリミング・メタデータ削除・WebP保存。戻り値: "processed" | "skipped"."""
     with raw_img:
         # EXIF Orientationに従って回転・反転を適用してから処理する
         img = ImageOps.exif_transpose(raw_img)
@@ -107,7 +107,7 @@ def _crop_and_save(
         clean = Image.new(cropped.mode, cropped.size)
         clean.paste(cropped)
         output_dir.mkdir(parents=True, exist_ok=True)
-        clean.save(out_path, format="PNG")
+        clean.save(out_path, format="WEBP", lossless=True)
         print(f"  [保存] {out_name}  ({orig_w}x{orig_h} → {crop_w}x{crop_h})")
         return "processed"
 
