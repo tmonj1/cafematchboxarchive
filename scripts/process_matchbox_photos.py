@@ -8,7 +8,7 @@
 # ///
 """マッチ箱写真処理スクリプト
 
-Apple Photosのアルバムから写真を取得し、中央トリミング・メタデータ削除・PNG変換を行う。
+Apple Photosのアルバムから写真を取得し、中央トリミング・メタデータ削除・WebP変換を行う。
 """
 
 import argparse
@@ -24,7 +24,7 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from PIL import Image, ImageOps
+    from PIL import Image, ImageOps, features as pil_features
 except ImportError:
     print(f"Pillow がインストールされていません。uv run {__file__} で実行してください。")
     sys.exit(1)
@@ -74,7 +74,7 @@ def make_output_filename(photo: osxphotos.PhotoInfo, crop_w: int, crop_h: int) -
     date_str = photo.date.strftime("%Y%m%d_%H%M%S")
     stem = Path(photo.original_filename).stem
     uid = photo.uuid[:8]
-    return f"{date_str}_{stem}_{crop_w}x{crop_h}_{uid}.png"
+    return f"{date_str}_{stem}_{crop_w}x{crop_h}_{uid}.webp"
 
 
 def _crop_and_save(
@@ -83,7 +83,7 @@ def _crop_and_save(
     output_dir: Path,
     ratio: Optional[tuple[float, float]],
 ) -> str:
-    """トリミング・メタデータ削除・PNG保存。戻り値: "processed" | "skipped"."""
+    """トリミング・メタデータ削除・WebP保存。戻り値: "processed" | "skipped" | "error"."""
     with raw_img:
         # EXIF Orientationに従って回転・反転を適用してから処理する
         img = ImageOps.exif_transpose(raw_img)
@@ -98,6 +98,9 @@ def _crop_and_save(
         if out_path.exists():
             print(f"  [スキップ] {out_name}")
             return "skipped"
+        png_path = out_path.with_suffix(".png")
+        if png_path.exists():
+            print(f"  [注意] 同名のPNGが存在します（不要なら削除してください）: {png_path.name}")
 
         cropped = img.crop(box)
         # パレットモードはRGB/RGBAに変換してから転写し、色壊れを防ぐ
@@ -107,7 +110,11 @@ def _crop_and_save(
         clean = Image.new(cropped.mode, cropped.size)
         clean.paste(cropped)
         output_dir.mkdir(parents=True, exist_ok=True)
-        clean.save(out_path, format="PNG")
+        try:
+            clean.save(out_path, format="WEBP", lossless=True)
+        except Exception as e:
+            print(f"  [エラー] WebP保存失敗: {photo.original_filename} ({e})")
+            return "error"
         print(f"  [保存] {out_name}  ({orig_w}x{orig_h} → {crop_w}x{crop_h})")
         return "processed"
 
@@ -125,9 +132,13 @@ def process_photo(
         box = calc_crop_box(orig_w, orig_h, ratio)
         crop_w, crop_h = box[2] - box[0], box[3] - box[1]
         out_name = make_output_filename(photo, crop_w, crop_h)
-        if (output_dir / out_name).exists():
+        out_path = output_dir / out_name
+        if out_path.exists():
             print(f"  [スキップ] {out_name}")
             return "skipped"
+        png_path = out_path.with_suffix(".png")
+        if png_path.exists():
+            print(f"  [注意] 同名のPNGが存在します（不要なら削除してください）: {png_path.name}")
         print(f"  [dry-run] {out_name}  ({orig_w}x{orig_h} → {crop_w}x{crop_h})")
         return "dry_run"
 
@@ -209,6 +220,10 @@ def main() -> None:
         "--dry-run", action="store_true", help="実際には保存せず処理対象を表示する"
     )
     args = parser.parse_args()
+
+    if not args.dry_run and not pil_features.check("webp"):
+        print("エラー: PillowがWebPをサポートしていません（libwebp が必要です）。")
+        sys.exit(1)
 
     ratio: Optional[tuple[float, float]] = None
     if args.ratio:
