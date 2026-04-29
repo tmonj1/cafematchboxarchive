@@ -76,6 +76,18 @@ def process_photo(
     dry_run: bool,
 ) -> str:
     """1枚の写真を処理する。戻り値: "processed" | "skipped" | "dry_run" | "error"."""
+    # dry-runはエクスポート不要: osxphotosメタデータのサイズで推定表示
+    if dry_run:
+        orig_w, orig_h = photo.width, photo.height
+        box = calc_crop_box(orig_w, orig_h, ratio)
+        crop_w, crop_h = box[2] - box[0], box[3] - box[1]
+        out_name = make_output_filename(photo, crop_w, crop_h)
+        if (output_dir / out_name).exists():
+            print(f"  [スキップ] {out_name}")
+            return "skipped"
+        print(f"  [dry-run] {out_name}  ({orig_w}x{orig_h} → {crop_w}x{crop_h})")
+        return "dry_run"
+
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
 
@@ -112,11 +124,10 @@ def process_photo(
                 print(f"  [スキップ] {out_name}")
                 return "skipped"
 
-            if dry_run:
-                print(f"  [dry-run] {out_name}  ({orig_w}x{orig_h} → {crop_w}x{crop_h})")
-                return "dry_run"
-
             cropped = img.crop(box)
+            # パレットモードはRGB/RGBAに変換してから転写し、色壊れを防ぐ
+            if cropped.mode not in ("RGB", "RGBA", "L", "LA"):
+                cropped = cropped.convert("RGBA" if cropped.getbands().__contains__("A") else "RGB")
             # paste()でピクセルのみ転写し、EXIFなどのメタデータを除去する
             clean = Image.new(cropped.mode, cropped.size)
             clean.paste(cropped)
