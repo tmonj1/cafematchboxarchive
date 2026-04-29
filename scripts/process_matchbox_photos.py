@@ -24,7 +24,7 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from PIL import Image, ImageOps
+    from PIL import Image, ImageOps, features as pil_features
 except ImportError:
     print(f"Pillow がインストールされていません。uv run {__file__} で実行してください。")
     sys.exit(1)
@@ -95,7 +95,8 @@ def _crop_and_save(
         out_name = make_output_filename(photo, crop_w, crop_h)
         out_path = output_dir / out_name
 
-        if out_path.exists():
+        # 既存の .webp、または PNG 時代の同名 .png があればスキップ
+        if out_path.exists() or out_path.with_suffix(".png").exists():
             print(f"  [スキップ] {out_name}")
             return "skipped"
 
@@ -209,6 +210,10 @@ def main() -> None:
         "--dry-run", action="store_true", help="実際には保存せず処理対象を表示する"
     )
     args = parser.parse_args()
+
+    if not pil_features.check("webp"):
+        print("エラー: PillowがWebPをサポートしていません（libwebp が必要です）。")
+        sys.exit(1)
 
     ratio: Optional[tuple[float, float]] = None
     if args.ratio:
