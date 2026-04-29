@@ -32,6 +32,7 @@ except ImportError:
 
 DEFAULT_ALBUM = "マッチ箱"
 DEFAULT_OUTPUT = Path(__file__).parent / "images"
+IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".tiff", ".bmp"}
 
 
 def parse_ratio(ratio_str: str) -> tuple[float, float]:
@@ -132,19 +133,28 @@ def process_photo(
 
     # オリジナルがiCloud未ダウンロードの場合はローカルのデリバティブ画像で代替
     if photo.ismissing:
-        image_exts = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".tiff", ".bmp"}
         derivative_images = [
-            p for p in photo.path_derivatives if Path(p).suffix.lower() in image_exts
+            p for p in photo.path_derivatives if Path(p).suffix.lower() in IMAGE_EXTS
         ]
         raw_img = None
+        last_open_error: Optional[Exception] = None
         for candidate in derivative_images:
             try:
                 raw_img = Image.open(Path(candidate))
                 break
-            except Exception:
+            except Exception as e:
+                last_open_error = e
                 continue
         if raw_img is None:
-            print(f"  [エラー] ローカルに画像なし（iCloud未ダウンロード）: {photo.original_filename}")
+            if not derivative_images:
+                print(f"  [エラー] ローカルに画像なし（iCloud未ダウンロード）: {photo.original_filename}")
+            else:
+                candidates = ", ".join(str(Path(p).name) for p in derivative_images)
+                print(
+                    f"  [エラー] デリバティブ画像を開けませんでした: {photo.original_filename}"
+                    f" (候補: {candidates})"
+                    + (f" (最後のエラー: {last_open_error})" if last_open_error else "")
+                )
             return "error"
         return _crop_and_save(photo, raw_img, output_dir, ratio)
 
@@ -157,8 +167,7 @@ def process_photo(
         )
         exporter = osxphotos.PhotoExporter(photo)
         results = exporter.export(tmp_path, options=options)
-        image_exts = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".tiff", ".bmp"}
-        exported_images = [p for p in results.exported if Path(p).suffix.lower() in image_exts]
+        exported_images = [p for p in results.exported if Path(p).suffix.lower() in IMAGE_EXTS]
         if not exported_images:
             print(f"  [エラー] 画像ファイルのエクスポート失敗: {photo.original_filename}")
             return "error"
