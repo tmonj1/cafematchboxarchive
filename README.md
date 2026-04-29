@@ -203,7 +203,7 @@ python3 scripts/process_matchbox_photos.py --max-count 10
 | `--max-count N` | 全件 | 処理する最大枚数 |
 | `--dry-run` | — | 保存せず処理対象のみ表示 |
 
-出力ファイル名は `YYYYMMDD_HHMMSS_<元ファイル名>_<幅>x<高さ>_<UUID8桁>.png` 形式で、既存ファイルは上書きせずスキップします。
+出力ファイル名は `YYYYMMDD_HHMMSS_<拡張子を除いた元ファイル名>_<幅>x<高さ>_<UUID8桁>.png` 形式で、既存ファイルは上書きせずスキップします。
 
 ## ライセンス
 
