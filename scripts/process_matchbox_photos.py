@@ -17,7 +17,7 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageOps
 except ImportError:
     print("Pillow がインストールされていません。pip install Pillow を実行してください。")
     sys.exit(1)
@@ -74,7 +74,7 @@ def process_photo(
     ratio: Optional[tuple[float, float]],
     dry_run: bool,
 ) -> str:
-    """1枚の写真を処理する。戻り値: "processed" | "skipped" | "error"."""
+    """1枚の写真を処理する。戻り値: "processed" | "skipped" | "dry_run" | "error"."""
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
 
@@ -88,7 +88,9 @@ def process_photo(
             return "error"
 
         exported_file = Path(results.exported[0])
-        with Image.open(exported_file) as img:
+        with Image.open(exported_file) as raw:
+            # EXIF Orientationに従って回転・反転を適用してから処理する
+            img = ImageOps.exif_transpose(raw)
             orig_w, orig_h = img.size
             box = calc_crop_box(orig_w, orig_h, ratio)
             crop_w = box[2] - box[0]
