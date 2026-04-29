@@ -32,6 +32,7 @@ except ImportError:
 
 DEFAULT_ALBUM = "マッチ箱"
 DEFAULT_OUTPUT = Path(__file__).parent / "images"
+IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".tiff", ".bmp"}
 
 
 def parse_ratio(ratio_str: str) -> tuple[float, float]:
@@ -76,6 +77,41 @@ def make_output_filename(photo: osxphotos.PhotoInfo, crop_w: int, crop_h: int) -
     return f"{date_str}_{stem}_{crop_w}x{crop_h}_{uid}.png"
 
 
+def _crop_and_save(
+    photo: osxphotos.PhotoInfo,
+    raw_img: "Image.Image",
+    output_dir: Path,
+    ratio: Optional[tuple[float, float]],
+) -> str:
+    """トリミング・メタデータ削除・PNG保存。戻り値: "processed" | "skipped"."""
+    with raw_img:
+        # EXIF Orientationに従って回転・反転を適用してから処理する
+        img = ImageOps.exif_transpose(raw_img)
+        orig_w, orig_h = img.size
+        box = calc_crop_box(orig_w, orig_h, ratio)
+        crop_w = box[2] - box[0]
+        crop_h = box[3] - box[1]
+
+        out_name = make_output_filename(photo, crop_w, crop_h)
+        out_path = output_dir / out_name
+
+        if out_path.exists():
+            print(f"  [スキップ] {out_name}")
+            return "skipped"
+
+        cropped = img.crop(box)
+        # パレットモードはRGB/RGBAに変換してから転写し、色壊れを防ぐ
+        if cropped.mode not in ("RGB", "RGBA", "L", "LA"):
+            cropped = cropped.convert("RGBA" if "A" in cropped.getbands() else "RGB")
+        # paste()でピクセルのみ転写し、EXIFなどのメタデータを除去する
+        clean = Image.new(cropped.mode, cropped.size)
+        clean.paste(cropped)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        clean.save(out_path, format="PNG")
+        print(f"  [保存] {out_name}  ({orig_w}x{orig_h} → {crop_w}x{crop_h})")
+        return "processed"
+
+
 def process_photo(
     photo: osxphotos.PhotoInfo,
     output_dir: Path,
@@ -95,6 +131,33 @@ def process_photo(
         print(f"  [dry-run] {out_name}  ({orig_w}x{orig_h} → {crop_w}x{crop_h})")
         return "dry_run"
 
+    # オリジナルがiCloud未ダウンロードの場合はローカルのデリバティブ画像で代替
+    if photo.ismissing:
+        derivative_images = [
+            p for p in photo.path_derivatives if Path(p).suffix.lower() in IMAGE_EXTS
+        ]
+        raw_img = None
+        last_open_error: Optional[Exception] = None
+        for candidate in derivative_images:
+            try:
+                raw_img = Image.open(Path(candidate))
+                break
+            except Exception as e:
+                last_open_error = e
+                continue
+        if raw_img is None:
+            if not derivative_images:
+                print(f"  [エラー] ローカルに画像なし（iCloud未ダウンロード）: {photo.original_filename}")
+            else:
+                candidates = ", ".join(str(Path(p).name) for p in derivative_images)
+                print(
+                    f"  [エラー] デリバティブ画像を開けませんでした: {photo.original_filename}"
+                    f" (候補: {candidates})"
+                    + (f" (最後のエラー: {last_open_error})" if last_open_error else "")
+                )
+            return "error"
+        return _crop_and_save(photo, raw_img, output_dir, ratio)
+
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
 
@@ -104,45 +167,18 @@ def process_photo(
         )
         exporter = osxphotos.PhotoExporter(photo)
         results = exporter.export(tmp_path, options=options)
-        image_exts = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".tiff", ".bmp"}
-        exported_images = [p for p in results.exported if Path(p).suffix.lower() in image_exts]
+        exported_images = [p for p in results.exported if Path(p).suffix.lower() in IMAGE_EXTS]
         if not exported_images:
             print(f"  [エラー] 画像ファイルのエクスポート失敗: {photo.original_filename}")
             return "error"
 
         try:
-            exported_file = Path(exported_images[0])
-            raw_img = Image.open(exported_file)
+            raw_img = Image.open(Path(exported_images[0]))
         except Exception as e:
             print(f"  [エラー] 画像読み込み失敗: {photo.original_filename} ({e})")
             return "error"
 
-        with raw_img:
-            # EXIF Orientationに従って回転・反転を適用してから処理する
-            img = ImageOps.exif_transpose(raw_img)
-            orig_w, orig_h = img.size
-            box = calc_crop_box(orig_w, orig_h, ratio)
-            crop_w = box[2] - box[0]
-            crop_h = box[3] - box[1]
-
-            out_name = make_output_filename(photo, crop_w, crop_h)
-            out_path = output_dir / out_name
-
-            if out_path.exists():
-                print(f"  [スキップ] {out_name}")
-                return "skipped"
-
-            cropped = img.crop(box)
-            # パレットモードはRGB/RGBAに変換してから転写し、色壊れを防ぐ
-            if cropped.mode not in ("RGB", "RGBA", "L", "LA"):
-                cropped = cropped.convert("RGBA" if cropped.getbands().__contains__("A") else "RGB")
-            # paste()でピクセルのみ転写し、EXIFなどのメタデータを除去する
-            clean = Image.new(cropped.mode, cropped.size)
-            clean.paste(cropped)
-            output_dir.mkdir(parents=True, exist_ok=True)
-            clean.save(out_path, format="PNG")
-            print(f"  [保存] {out_name}  ({orig_w}x{orig_h} → {crop_w}x{crop_h})")
-            return "processed"
+        return _crop_and_save(photo, raw_img, output_dir, ratio)
 
 
 def main() -> None:
