@@ -103,12 +103,12 @@ def process_photo(
 
             if dry_run:
                 print(f"  [dry-run] {out_name}  ({orig_w}x{orig_h} → {crop_w}x{crop_h})")
-                return "processed"
+                return "dry_run"
 
             cropped = img.crop(box)
-            # メタデータを除去するため、ピクセルデータのみを新規Imageに転写
+            # paste()でピクセルのみ転写し、EXIFなどのメタデータを除去する
             clean = Image.new(cropped.mode, cropped.size)
-            clean.putdata(list(cropped.getdata()))
+            clean.paste(cropped)
             output_dir.mkdir(parents=True, exist_ok=True)
             clean.save(out_path, format="PNG")
             print(f"  [保存] {out_name}  ({orig_w}x{orig_h} → {crop_w}x{crop_h})")
@@ -164,14 +164,17 @@ def main() -> None:
     print(f"出力先: {args.output.resolve()}")
     print()
 
-    counts = {"processed": 0, "skipped": 0, "error": 0}
+    counts = {"processed": 0, "skipped": 0, "error": 0, "dry_run": 0}
     for i, photo in enumerate(photos, 1):
         print(f"[{i}/{total}] {photo.original_filename}", end="  ")
         result = process_photo(photo, args.output, ratio, args.dry_run)
         counts[result] += 1
 
     print()
-    print(f"完了: 処理済み {counts['processed']} 枚 / スキップ {counts['skipped']} 枚 / エラー {counts['error']} 枚")
+    if args.dry_run:
+        print(f"完了(dry-run): 処理対象 {counts['dry_run']} 枚 / スキップ {counts['skipped']} 枚 / エラー {counts['error']} 枚")
+    else:
+        print(f"完了: 処理済み {counts['processed']} 枚 / スキップ {counts['skipped']} 枚 / エラー {counts['error']} 枚")
 
 
 if __name__ == "__main__":
