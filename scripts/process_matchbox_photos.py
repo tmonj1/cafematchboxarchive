@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#   "osxphotos>=0.68.0",
+#   "Pillow>=10.0.0",
+# ]
+# ///
 """マッチ箱写真処理スクリプト
 
 Apple Photosのアルバムから写真を取得し、中央トリミング・メタデータ削除・PNG変換を行う。
@@ -13,13 +20,13 @@ from typing import Optional
 try:
     import osxphotos
 except ImportError:
-    print("osxphotos がインストールされていません。pip install osxphotos を実行してください。")
+    print(f"osxphotos がインストールされていません。uv run {__file__} で実行してください。")
     sys.exit(1)
 
 try:
     from PIL import Image, ImageOps
 except ImportError:
-    print("Pillow がインストールされていません。pip install Pillow を実行してください。")
+    print(f"Pillow がインストールされていません。uv run {__file__} で実行してください。")
     sys.exit(1)
 
 

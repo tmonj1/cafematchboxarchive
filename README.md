@@ -168,29 +168,27 @@ npm test
 ### 前提条件
 
 - macOS（Apple Photos ライブラリへのアクセスが必要）
-- Python 3.11 以上
-
-```bash
-pip install -r scripts/requirements.txt
-```
+- [uv](https://docs.astral.sh/uv/) がインストール済みであること（Python 3.11 以上は uv が自動で管理）
 
 ### 使い方
 
+依存ライブラリのインストールは不要です。`uv run` が初回実行時に自動でセットアップします。
+
 ```bash
 # 基本的な使い方（アルバム「マッチ箱」から全件処理）
-python3 scripts/process_matchbox_photos.py
+uv run scripts/process_matchbox_photos.py
 
 # アルバム名・出力先・トリミング比率を指定する
-python3 scripts/process_matchbox_photos.py \
+uv run scripts/process_matchbox_photos.py \
   --album "マッチ箱" \
   --output ./output \
   --ratio 4:3
 
 # 処理対象を確認するだけで保存しない（dry-run）
-python3 scripts/process_matchbox_photos.py --dry-run
+uv run scripts/process_matchbox_photos.py --dry-run
 
 # 最大 10 枚だけ処理する
-python3 scripts/process_matchbox_photos.py --max-count 10
+uv run scripts/process_matchbox_photos.py --max-count 10
 ```
 
 ### オプション
