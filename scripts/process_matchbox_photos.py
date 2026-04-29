@@ -126,7 +126,8 @@ def process_photo(
         box = calc_crop_box(orig_w, orig_h, ratio)
         crop_w, crop_h = box[2] - box[0], box[3] - box[1]
         out_name = make_output_filename(photo, crop_w, crop_h)
-        if (output_dir / out_name).exists():
+        out_path = output_dir / out_name
+        if out_path.exists() or out_path.with_suffix(".png").exists():
             print(f"  [スキップ] {out_name}")
             return "skipped"
         print(f"  [dry-run] {out_name}  ({orig_w}x{orig_h} → {crop_w}x{crop_h})")
@@ -211,7 +212,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    if not pil_features.check("webp"):
+    if not args.dry_run and not pil_features.check("webp"):
         print("エラー: PillowがWebPをサポートしていません（libwebp が必要です）。")
         sys.exit(1)
 
