@@ -79,7 +79,7 @@ export function EditScreen({ cafe, nav, theme, isDesktop }) {
       const idx = (prev.imageKeys || []).indexOf(key);
       return {
         ...prev,
-        imageKeys: prev.imageKeys.filter(k => k !== key),
+        imageKeys: (prev.imageKeys || []).filter(k => k !== key),
         imageUrls: (prev.imageUrls || []).filter((_, i) => i !== idx),
       };
     });

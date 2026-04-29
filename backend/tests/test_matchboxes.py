@@ -168,6 +168,34 @@ async def test_delete_matchbox_api(auth_client):
 
 
 @pytest.mark.asyncio
+async def test_image_urls_in_create_matchbox(auth_client):
+    resp = await auth_client.post("/api/matchboxes", json={
+        "name": "New", "roman": "N", "est": "", "loc": "", "desc": "",
+        "tags": [], "acquired": "", "closed": None, "style": 0,
+    })
+    assert resp.status_code == 201
+    data = resp.json()
+    assert "imageUrls" in data
+    assert len(data["imageUrls"]) == len(data["imageKeys"])
+
+
+@pytest.mark.asyncio
+async def test_image_urls_in_update_matchbox(auth_client):
+    created = (await auth_client.post("/api/matchboxes", json={
+        "name": "Before", "roman": "B", "est": "", "loc": "", "desc": "",
+        "tags": [], "acquired": "", "closed": None, "style": 0,
+    })).json()
+    resp = await auth_client.put(
+        f"/api/matchboxes/{created['matchboxId']}",
+        json={"name": "After"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "imageUrls" in data
+    assert len(data["imageUrls"]) == len(data["imageKeys"])
+
+
+@pytest.mark.asyncio
 async def test_image_urls_in_list_matchboxes(client, auth_client):
     await auth_client.post("/api/matchboxes", json={
         "name": "A", "roman": "A", "est": "", "loc": "", "desc": "",
