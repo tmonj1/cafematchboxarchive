@@ -1,4 +1,4 @@
-#!/usr/bin/env -S uv run
+#!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.11"
 # dependencies = [
@@ -20,13 +20,13 @@ from typing import Optional
 try:
     import osxphotos
 except ImportError:
-    print("osxphotos がインストールされていません。uv run scripts/process_matchbox_photos.py で実行してください。")
+    print(f"osxphotos がインストールされていません。uv run {__file__} で実行してください。")
     sys.exit(1)
 
 try:
     from PIL import Image, ImageOps
 except ImportError:
-    print("Pillow がインストールされていません。uv run scripts/process_matchbox_photos.py で実行してください。")
+    print(f"Pillow がインストールされていません。uv run {__file__} で実行してください。")
     sys.exit(1)
 
 
