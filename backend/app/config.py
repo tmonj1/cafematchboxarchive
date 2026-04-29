@@ -22,6 +22,10 @@ S3_BUCKET = lambda: get("S3_BUCKET", "cafematchbox-images")
 S3_ACCESS_KEY = lambda: get("S3_ACCESS_KEY", "minioadmin")
 S3_SECRET_KEY = lambda: get("S3_SECRET_KEY", "minioadmin")
 
+# DynamoDB table names
+USERS_TABLE = lambda: get("USERS_TABLE", "users")
+MATCHBOXES_TABLE = lambda: get("MATCHBOXES_TABLE", "matchboxes")
+
 # OIDC
 OIDC_PROVIDERS = lambda: json.loads(get("OIDC_PROVIDERS", "{}"))
 

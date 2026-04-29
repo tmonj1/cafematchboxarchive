@@ -4,15 +4,13 @@ from datetime import datetime, timezone
 from typing import Optional
 from botocore.exceptions import ClientError
 from app.db.client import get_dynamodb_resource
+from app import config
 
 logger = logging.getLogger(__name__)
 
 
-TABLE_NAME = "users"
-
-
 def _table():
-    return get_dynamodb_resource().Table(TABLE_NAME)
+    return get_dynamodb_resource().Table(config.USERS_TABLE())
 
 
 def create_user(username: str, password_hash: str, bio: str = "") -> dict:
