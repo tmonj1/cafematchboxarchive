@@ -83,7 +83,7 @@ def _crop_and_save(
     output_dir: Path,
     ratio: Optional[tuple[float, float]],
 ) -> str:
-    """トリミング・メタデータ削除・WebP保存。戻り値: "processed" | "skipped"."""
+    """トリミング・メタデータ削除・WebP保存。戻り値: "processed" | "skipped" | "error"."""
     with raw_img:
         # EXIF Orientationに従って回転・反転を適用してから処理する
         img = ImageOps.exif_transpose(raw_img)

@@ -163,7 +163,7 @@ npm test
 
 ## マッチ箱写真処理スクリプト
 
-`scripts/process_matchbox_photos.py` は、Apple Photos のアルバムからマッチ箱の写真を取得し、中央トリミング・メタデータ削除・PNG変換を一括で行うユーティリティです（macOS 専用）。
+`scripts/process_matchbox_photos.py` は、Apple Photos のアルバムからマッチ箱の写真を取得し、中央トリミング・メタデータ削除・WebP変換（ロスレス）を一括で行うユーティリティです（macOS 専用）。
 
 ### 前提条件
 
@@ -201,7 +201,7 @@ uv run scripts/process_matchbox_photos.py --max-count 10
 | `--max-count N` | 全件 | 処理する最大枚数 |
 | `--dry-run` | — | 保存せず処理対象のみ表示 |
 
-出力ファイル名は `YYYYMMDD_HHMMSS_<拡張子を除いた元ファイル名>_<幅>x<高さ>_<UUID8桁>.png` 形式で、既存ファイルは上書きせずスキップします。
+出力ファイル名は `YYYYMMDD_HHMMSS_<拡張子を除いた元ファイル名>_<幅>x<高さ>_<UUID8桁>.webp` 形式で、既存ファイルは上書きせずスキップします。同名の `.png` が残っている場合は注意メッセージを表示します。
 
 ## ライセンス
 
