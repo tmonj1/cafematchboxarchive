@@ -1,4 +1,11 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#   "osxphotos>=0.68.0",
+#   "Pillow>=10.0.0",
+# ]
+# ///
 """マッチ箱写真処理スクリプト
 
 Apple Photosのアルバムから写真を取得し、中央トリミング・メタデータ削除・PNG変換を行う。
