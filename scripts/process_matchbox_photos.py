@@ -20,13 +20,13 @@ from typing import Optional
 try:
     import osxphotos
 except ImportError:
-    print("osxphotos がインストールされていません。pip install osxphotos を実行してください。")
+    print("osxphotos がインストールされていません。uv run scripts/process_matchbox_photos.py で実行してください。")
     sys.exit(1)
 
 try:
     from PIL import Image, ImageOps
 except ImportError:
-    print("Pillow がインストールされていません。pip install Pillow を実行してください。")
+    print("Pillow がインストールされていません。uv run scripts/process_matchbox_photos.py で実行してください。")
     sys.exit(1)
 
 

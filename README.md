@@ -168,7 +168,7 @@ npm test
 ### 前提条件
 
 - macOS（Apple Photos ライブラリへのアクセスが必要）
-- [uv](https://docs.astral.sh/uv/) がインストール済みであること
+- [uv](https://docs.astral.sh/uv/) がインストール済みであること（Python 3.11 以上は uv が自動で管理）
 
 ### 使い方
 
