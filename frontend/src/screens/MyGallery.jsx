@@ -20,7 +20,14 @@ export function MyGallery({ nav, theme, layout, isDesktop }) {
 
   const items = useMemo(() => matchboxes.filter(c => {
     if (selTag && !c.tags?.includes(selTag)) return false;
-    if (query && !(c.name?.includes(query) || c.loc?.includes(query))) return false;
+    if (query) {
+      if (query.startsWith('#')) {
+        const tagQuery = query.slice(1).toLowerCase();
+        if (tagQuery && !c.tags?.some(t => t.toLowerCase().includes(tagQuery))) return false;
+      } else {
+        if (!(c.name?.includes(query) || c.loc?.includes(query))) return false;
+      }
+    }
     return true;
   }), [matchboxes, selTag, query]);
 

@@ -25,8 +25,13 @@ export function PublicGallery({ nav, theme, layout, isDesktop }) {
     return matchboxes.filter(c => {
       if (selTag && !c.tags?.includes(selTag)) return false;
       if (query) {
-        const q = query.toLowerCase();
-        if (!(c.name?.toLowerCase().includes(q) || c.loc?.toLowerCase().includes(q) || c.roman?.toLowerCase().includes(q))) return false;
+        if (query.startsWith('#')) {
+          const tagQuery = query.slice(1).toLowerCase();
+          if (tagQuery && !c.tags?.some(t => t.toLowerCase().includes(tagQuery))) return false;
+        } else {
+          const q = query.toLowerCase();
+          if (!(c.name?.toLowerCase().includes(q) || c.loc?.toLowerCase().includes(q) || c.roman?.toLowerCase().includes(q))) return false;
+        }
       }
       return true;
     });
