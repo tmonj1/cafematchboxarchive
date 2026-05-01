@@ -26,6 +26,24 @@ def test_get_image_url(aws_mock):
     assert key in url
 
 
+def test_get_image_url_uses_public_endpoint(aws_mock, monkeypatch):
+    monkeypatch.setenv("S3_ENDPOINT", "http://minio:9000")
+    monkeypatch.setenv("S3_PUBLIC_ENDPOINT", "http://localhost:9000")
+    key = "u1/m1/test.jpg"
+    url = get_image_url(key)
+    assert url.startswith("http://localhost:9000")
+    assert key in url
+
+
+def test_get_image_url_falls_back_to_s3_endpoint(aws_mock, monkeypatch):
+    monkeypatch.setenv("S3_ENDPOINT", "http://minio:9000")
+    monkeypatch.delenv("S3_PUBLIC_ENDPOINT", raising=False)
+    key = "u1/m1/test.jpg"
+    url = get_image_url(key)
+    assert url.startswith("http://minio:9000")
+    assert key in url
+
+
 @pytest.mark.asyncio
 async def test_upload_image_api(auth_client):
     # まずマッチ箱を作成
