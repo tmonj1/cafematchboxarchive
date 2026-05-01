@@ -37,8 +37,9 @@ def get_image_url(key: str) -> str:
     """
     endpoint = config.S3_ENDPOINT()
     if endpoint:
-        # MinIO 開発環境: 直接 URL を返す（バケットを public に設定済み）
-        return f"{endpoint}/{config.S3_BUCKET()}/{key}"
+        # MinIO 開発環境: ブラウザからアクセス可能な公開エンドポイントを使用
+        public_endpoint = config.S3_PUBLIC_ENDPOINT()
+        return f"{public_endpoint}/{config.S3_BUCKET()}/{key}"
     client = get_s3_client()
     return client.generate_presigned_url(
         "get_object",
