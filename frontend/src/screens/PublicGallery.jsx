@@ -22,15 +22,16 @@ export function PublicGallery({ nav, theme, layout, isDesktop }) {
   }, []);
 
   const items = useMemo(() => {
+    const q = query.trim();
     return matchboxes.filter(c => {
       if (selTag && !c.tags?.includes(selTag)) return false;
-      if (query) {
-        if (query.startsWith('#')) {
-          const tagQuery = query.slice(1).toLowerCase();
+      if (q) {
+        if (q.startsWith('#')) {
+          const tagQuery = q.slice(1).trim().toLowerCase();
           if (tagQuery && !c.tags?.some(t => t.toLowerCase().includes(tagQuery))) return false;
         } else {
-          const q = query.toLowerCase();
-          if (!(c.name?.toLowerCase().includes(q) || c.loc?.toLowerCase().includes(q) || c.roman?.toLowerCase().includes(q))) return false;
+          const ql = q.toLowerCase();
+          if (!(c.name?.toLowerCase().includes(ql) || c.loc?.toLowerCase().includes(ql) || c.roman?.toLowerCase().includes(ql))) return false;
         }
       }
       return true;
