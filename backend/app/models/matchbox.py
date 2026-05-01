@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
 
 
@@ -39,5 +39,6 @@ class MatchboxResponse(BaseModel):
     closed: Optional[str]
     style: int
     imageKeys: List[str]
+    imageUrls: List[str] = Field(default_factory=list)
     createdAt: str
     updatedAt: str

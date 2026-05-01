@@ -165,3 +165,105 @@ async def test_delete_matchbox_api(auth_client):
     })).json()
     resp = await auth_client.delete(f"/api/matchboxes/{created['matchboxId']}")
     assert resp.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_image_urls_in_create_matchbox(auth_client):
+    resp = await auth_client.post("/api/matchboxes", json={
+        "name": "New", "roman": "N", "est": "", "loc": "", "desc": "",
+        "tags": [], "acquired": "", "closed": None, "style": 0,
+    })
+    assert resp.status_code == 201
+    data = resp.json()
+    assert "imageUrls" in data
+    assert len(data["imageUrls"]) == len(data["imageKeys"])
+
+
+@pytest.mark.asyncio
+async def test_image_urls_in_update_matchbox(auth_client):
+    created = (await auth_client.post("/api/matchboxes", json={
+        "name": "Before", "roman": "B", "est": "", "loc": "", "desc": "",
+        "tags": [], "acquired": "", "closed": None, "style": 0,
+    })).json()
+    resp = await auth_client.put(
+        f"/api/matchboxes/{created['matchboxId']}",
+        json={"name": "After"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "imageUrls" in data
+    assert len(data["imageUrls"]) == len(data["imageKeys"])
+
+
+@pytest.mark.asyncio
+async def test_image_urls_in_list_matchboxes(auth_client):
+    await auth_client.post("/api/matchboxes", json={
+        "name": "A", "roman": "A", "est": "", "loc": "", "desc": "",
+        "tags": [], "acquired": "", "closed": None, "style": 0,
+    })
+    resp = await auth_client.get("/api/matchboxes")
+    assert resp.status_code == 200
+    for item in resp.json():
+        assert "imageUrls" in item
+        assert len(item["imageUrls"]) == len(item["imageKeys"])
+
+
+@pytest.mark.asyncio
+async def test_image_urls_in_get_matchbox(auth_client):
+    created = (await auth_client.post("/api/matchboxes", json={
+        "name": "B", "roman": "B", "est": "", "loc": "", "desc": "",
+        "tags": [], "acquired": "", "closed": None, "style": 0,
+    })).json()
+    resp = await auth_client.get(f"/api/matchboxes/{created['matchboxId']}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "imageUrls" in data
+    assert len(data["imageUrls"]) == len(data["imageKeys"])
+
+
+@pytest.mark.asyncio
+async def test_image_urls_in_list_my_matchboxes(auth_client):
+    await auth_client.post("/api/matchboxes", json={
+        "name": "C", "roman": "C", "est": "", "loc": "", "desc": "",
+        "tags": [], "acquired": "", "closed": None, "style": 0,
+    })
+    resp = await auth_client.get("/api/matchboxes/mine")
+    assert resp.status_code == 200
+    for item in resp.json():
+        assert "imageUrls" in item
+        assert len(item["imageUrls"]) == len(item["imageKeys"])
+
+
+@pytest.mark.asyncio
+async def test_image_urls_contain_key(auth_client):
+    """imageUrls の各URLがimageKeysの対応するキーを含むことを検証する（get・list・mine）。"""
+    import io
+    mb = (await auth_client.post("/api/matchboxes", json={
+        "name": "URL Test", "roman": "UT", "est": "", "loc": "", "desc": "",
+        "tags": [], "acquired": "", "closed": None, "style": 0,
+    })).json()
+    mb_id = mb["matchboxId"]
+
+    fake = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 10)
+    upload_resp = (await auth_client.post(
+        f"/api/matchboxes/{mb_id}/images",
+        files={"file": ("test.jpg", fake, "image/jpeg")},
+    )).json()
+    image_key = upload_resp["key"]
+
+    # GET /matchboxes/{id}
+    get_data = (await auth_client.get(f"/api/matchboxes/{mb_id}")).json()
+    assert len(get_data["imageUrls"]) == 1
+    assert image_key in get_data["imageUrls"][0]
+
+    # GET /matchboxes
+    list_data = (await auth_client.get("/api/matchboxes")).json()
+    target = next(m for m in list_data if m["matchboxId"] == mb_id)
+    assert len(target["imageUrls"]) == 1
+    assert image_key in target["imageUrls"][0]
+
+    # GET /matchboxes/mine
+    mine_data = (await auth_client.get("/api/matchboxes/mine")).json()
+    target_mine = next(m for m in mine_data if m["matchboxId"] == mb_id)
+    assert len(target_mine["imageUrls"]) == 1
+    assert image_key in target_mine["imageUrls"][0]

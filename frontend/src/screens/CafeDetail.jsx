@@ -38,12 +38,12 @@ export function CafeDetail({ cafeId, nav, theme, editable = false, isDesktop }) 
     );
   }
 
-  const hasImages = cafe.imageKeys?.length > 0;
+  const hasImages = cafe.imageKeys?.length > 0 && cafe.imageUrls?.length === cafe.imageKeys?.length;
 
   const thumbnails = (
     <div style={{ display: 'flex', gap: 8, padding: isDesktop ? '16px 0' : '0 16px 16px', overflowX: 'auto' }}>
       {hasImages ? cafe.imageKeys.map((key, i) => (
-        <img key={key} src={key} alt={`photo-${i}`}
+        <img key={key} src={cafe.imageUrls[i]} alt={`photo-${i}`}
           onClick={() => setSelectedImg(i)}
           style={{ flexShrink: 0, width: 56, aspectRatio: '1 / 1.25', objectFit: 'cover',
             borderRadius: 3, cursor: 'pointer',
@@ -64,7 +64,7 @@ export function CafeDetail({ cafeId, nav, theme, editable = false, isDesktop }) 
   const heroSection = hasImages ? (
     <div style={{ padding: isDesktop ? 0 : '24px 48px 16px',
       background: isDesktop ? 'transparent' : `linear-gradient(to bottom, ${theme.panel}, ${theme.bg})` }}>
-      <img src={cafe.imageKeys[selectedImg]} alt={cafe.name}
+      <img src={cafe.imageUrls[selectedImg]} alt={cafe.name}
         style={{ width: '100%', aspectRatio: '1 / 1.25', objectFit: 'cover', borderRadius: 3 }} />
     </div>
   ) : (
