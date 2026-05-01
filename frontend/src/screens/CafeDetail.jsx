@@ -38,7 +38,7 @@ export function CafeDetail({ cafeId, nav, theme, editable = false, isDesktop }) 
     );
   }
 
-  const hasImages = cafe.imageKeys?.length > 0;
+  const hasImages = cafe.imageKeys?.length > 0 && cafe.imageUrls?.length === cafe.imageKeys?.length;
 
   const thumbnails = (
     <div style={{ display: 'flex', gap: 8, padding: isDesktop ? '16px 0' : '0 16px 16px', overflowX: 'auto' }}>

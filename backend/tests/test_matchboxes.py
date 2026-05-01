@@ -196,12 +196,12 @@ async def test_image_urls_in_update_matchbox(auth_client):
 
 
 @pytest.mark.asyncio
-async def test_image_urls_in_list_matchboxes(client, auth_client):
+async def test_image_urls_in_list_matchboxes(auth_client):
     await auth_client.post("/api/matchboxes", json={
         "name": "A", "roman": "A", "est": "", "loc": "", "desc": "",
         "tags": [], "acquired": "", "closed": None, "style": 0,
     })
-    resp = await client.get("/api/matchboxes")
+    resp = await auth_client.get("/api/matchboxes")
     assert resp.status_code == 200
     for item in resp.json():
         assert "imageUrls" in item
