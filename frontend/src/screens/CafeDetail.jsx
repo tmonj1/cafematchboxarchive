@@ -109,7 +109,7 @@ export function CafeDetail({ cafeId, nav, theme, isDesktop }) {
 
   return (
     <div style={{ background: theme.bg, minHeight: isDesktop ? '100vh' : '100%' }}>
-      <TopBar title="MATCH" theme={theme}
+      <TopBar title="マッチ箱" theme={theme}
         left={<IconBtn theme={theme} onClick={() => nav('back')}>{icons.back(theme.ink)}</IconBtn>}
         right={isOwner ? (
           <button onClick={() => nav('edit', { cafe })} style={{

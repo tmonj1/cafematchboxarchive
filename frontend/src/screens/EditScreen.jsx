@@ -216,7 +216,7 @@ export function EditScreen({ cafe, nav, theme, isDesktop }) {
 
   return (
     <div style={{ background: theme.bg, minHeight: isDesktop ? '100vh' : '100%' }}>
-      <TopBar title={isNew ? 'NEW MATCH' : 'EDIT'} theme={theme}
+      <TopBar title={isNew ? 'NEW MATCH' : '編集'} theme={theme}
         left={<button onClick={() => nav('back')} style={{ background: 'none', border: 'none',
           cursor: 'pointer', fontFamily: '"Noto Sans JP", sans-serif',
           fontSize: 12, color: theme.sub }}>キャンセル</button>}
