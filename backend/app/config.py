@@ -18,6 +18,7 @@ AWS_DEFAULT_REGION = lambda: get("AWS_DEFAULT_REGION", "ap-northeast-1")
 
 # S3
 S3_ENDPOINT = lambda: get("S3_ENDPOINT", "")
+S3_PUBLIC_ENDPOINT = lambda: get("S3_PUBLIC_ENDPOINT", get("S3_ENDPOINT", ""))
 S3_BUCKET = lambda: get("S3_BUCKET", "cafematchbox-images")
 S3_ACCESS_KEY = lambda: get("S3_ACCESS_KEY", "minioadmin")
 S3_SECRET_KEY = lambda: get("S3_SECRET_KEY", "minioadmin")
