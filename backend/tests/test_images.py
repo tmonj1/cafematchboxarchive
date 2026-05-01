@@ -13,6 +13,16 @@ def test_upload_image(aws_mock):
     assert key.endswith(".jpg")
 
 
+def test_upload_image_avif_extension(aws_mock):
+    data = io.BytesIO(b"fake-avif-content")
+    key = upload_image(
+        user_id="u1", matchbox_id="m1",
+        file_data=data, content_type="image/avif",
+    )
+    assert key.startswith("u1/m1/")
+    assert key.endswith(".avif")
+
+
 def test_delete_image(aws_mock):
     data = io.BytesIO(b"fake")
     key = upload_image(user_id="u1", matchbox_id="m1", file_data=data, content_type="image/jpeg")
@@ -42,6 +52,25 @@ def test_get_image_url_falls_back_to_s3_endpoint(aws_mock, monkeypatch):
     url = get_image_url(key)
     assert url.startswith("http://minio:9000")
     assert key in url
+
+
+@pytest.mark.asyncio
+async def test_upload_image_api_avif(auth_client):
+    mb_resp = await auth_client.post("/api/matchboxes", json={
+        "name": "AVIF Test", "roman": "AT", "est": "", "loc": "", "desc": "",
+        "tags": [], "acquired": "", "closed": None, "style": 0,
+    })
+    assert mb_resp.status_code == 201
+    mb_id = mb_resp.json()["matchboxId"]
+
+    fake_image = io.BytesIO(b"\x00\x00\x00\x1cftyp" + b"\x00" * 100)  # AVIF-like bytes
+    resp = await auth_client.post(
+        f"/api/matchboxes/{mb_id}/images",
+        files={"file": ("test.avif", fake_image, "image/avif")},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["key"].endswith(".avif")
 
 
 @pytest.mark.asyncio

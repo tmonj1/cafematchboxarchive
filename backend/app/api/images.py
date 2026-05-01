@@ -5,7 +5,7 @@ from app.auth.jwt import get_current_user
 
 router = APIRouter()
 
-ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp", "image/avif"}
 MAX_IMAGES = 9
 
 

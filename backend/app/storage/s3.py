@@ -8,6 +8,7 @@ CONTENT_TYPE_TO_EXT = {
     "image/png": "png",
     "image/gif": "gif",
     "image/webp": "webp",
+    "image/avif": "avif",
 }
 
 
