@@ -18,11 +18,22 @@ export function MyGallery({ nav, theme, layout, isDesktop }) {
     api.listMyMatchboxes().then(setMatchboxes).finally(() => setLoading(false));
   }, []);
 
-  const items = useMemo(() => matchboxes.filter(c => {
-    if (selTag && !c.tags?.includes(selTag)) return false;
-    if (query && !(c.name?.includes(query) || c.loc?.includes(query))) return false;
-    return true;
-  }), [matchboxes, selTag, query]);
+  const items = useMemo(() => {
+    const q = query.trim();
+    return matchboxes.filter(c => {
+      if (selTag && !c.tags?.includes(selTag)) return false;
+      if (q) {
+        if (q.startsWith('#')) {
+          const tagQuery = q.slice(1).trim().toLowerCase();
+          if (tagQuery && !c.tags?.some(t => t.toLowerCase().includes(tagQuery))) return false;
+        } else {
+          const ql = q.toLowerCase();
+          if (!(c.name?.toLowerCase().includes(ql) || c.loc?.toLowerCase().includes(ql))) return false;
+        }
+      }
+      return true;
+    });
+  }, [matchboxes, selTag, query]);
 
   return (
     <div style={{ background: theme.bg, minHeight: isDesktop ? '100vh' : '100%' }}>
