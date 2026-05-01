@@ -8,7 +8,7 @@
 # ///
 """マッチ箱写真処理スクリプト
 
-Apple Photosのアルバムから写真を取得し、中央トリミング・メタデータ削除・WebP変換を行う。
+Apple Photosのアルバムから写真を取得し、中央トリミング・メタデータ削除・AVIF変換を行う。
 """
 
 import argparse
@@ -32,7 +32,7 @@ except ImportError:
 
 DEFAULT_ALBUM = "マッチ箱"
 DEFAULT_OUTPUT = Path(__file__).parent / "images"
-IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".tiff", ".bmp"}
+IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".tiff", ".bmp"}
 
 
 def parse_ratio(ratio_str: str) -> tuple[float, float]:
@@ -74,7 +74,7 @@ def make_output_filename(photo: osxphotos.PhotoInfo, crop_w: int, crop_h: int) -
     date_str = photo.date.strftime("%Y%m%d_%H%M%S")
     stem = Path(photo.original_filename).stem
     uid = photo.uuid[:8]
-    return f"{date_str}_{stem}_{crop_w}x{crop_h}_{uid}.webp"
+    return f"{date_str}_{stem}_{crop_w}x{crop_h}_{uid}.avif"
 
 
 def _crop_and_save(
@@ -83,7 +83,7 @@ def _crop_and_save(
     output_dir: Path,
     ratio: Optional[tuple[float, float]],
 ) -> str:
-    """トリミング・メタデータ削除・WebP保存。戻り値: "processed" | "skipped" | "error"."""
+    """トリミング・メタデータ削除・AVIF保存。戻り値: "processed" | "skipped" | "error"."""
     with raw_img:
         # EXIF Orientationに従って回転・反転を適用してから処理する
         img = ImageOps.exif_transpose(raw_img)
@@ -111,9 +111,9 @@ def _crop_and_save(
         clean.paste(cropped)
         output_dir.mkdir(parents=True, exist_ok=True)
         try:
-            clean.save(out_path, format="WEBP", lossless=True)
+            clean.save(out_path, format="AVIF", quality=80)
         except Exception as e:
-            print(f"  [エラー] WebP保存失敗: {photo.original_filename} ({e})")
+            print(f"  [エラー] AVIF保存失敗: {photo.original_filename} ({e})")
             return "error"
         print(f"  [保存] {out_name}  ({orig_w}x{orig_h} → {crop_w}x{crop_h})")
         return "processed"
@@ -221,8 +221,8 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    if not args.dry_run and not pil_features.check("webp"):
-        print("エラー: PillowがWebPをサポートしていません（libwebp が必要です）。")
+    if not args.dry_run and not pil_features.check("avif"):
+        print("エラー: PillowがAVIFをサポートしていません（libavif が必要です）。")
         sys.exit(1)
 
     ratio: Optional[tuple[float, float]] = None
