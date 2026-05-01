@@ -236,7 +236,7 @@ async def test_image_urls_in_list_my_matchboxes(auth_client):
 
 @pytest.mark.asyncio
 async def test_image_urls_contain_key(auth_client):
-    """imageUrls の各URLがimageKeysの対応するキーを含むことを検証する。"""
+    """imageUrls の各URLがimageKeysの対応するキーを含むことを検証する（get・list・mine）。"""
     import io
     mb = (await auth_client.post("/api/matchboxes", json={
         "name": "URL Test", "roman": "UT", "est": "", "loc": "", "desc": "",
@@ -251,8 +251,19 @@ async def test_image_urls_contain_key(auth_client):
     )).json()
     image_key = upload_resp["key"]
 
-    resp = await auth_client.get(f"/api/matchboxes/{mb_id}")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert len(data["imageUrls"]) == 1
-    assert image_key in data["imageUrls"][0]
+    # GET /matchboxes/{id}
+    get_data = (await auth_client.get(f"/api/matchboxes/{mb_id}")).json()
+    assert len(get_data["imageUrls"]) == 1
+    assert image_key in get_data["imageUrls"][0]
+
+    # GET /matchboxes
+    list_data = (await auth_client.get("/api/matchboxes")).json()
+    target = next(m for m in list_data if m["matchboxId"] == mb_id)
+    assert len(target["imageUrls"]) == 1
+    assert image_key in target["imageUrls"][0]
+
+    # GET /matchboxes/mine
+    mine_data = (await auth_client.get("/api/matchboxes/mine")).json()
+    target_mine = next(m for m in mine_data if m["matchboxId"] == mb_id)
+    assert len(target_mine["imageUrls"]) == 1
+    assert image_key in target_mine["imageUrls"][0]
