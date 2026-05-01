@@ -16,7 +16,7 @@ function InfoRow({ label, children, theme }) {
   );
 }
 
-export function CafeDetail({ cafeId, nav, theme, editable = false, isDesktop }) {
+export function CafeDetail({ cafeId, nav, theme, isDesktop }) {
   const { user } = useAuth();
   const [cafe, setCafe] = useState(null);
   const [selectedImg, setSelectedImg] = useState(0);
@@ -39,6 +39,7 @@ export function CafeDetail({ cafeId, nav, theme, editable = false, isDesktop }) 
   }
 
   const hasImages = cafe.imageKeys?.length > 0 && cafe.imageUrls?.length === cafe.imageKeys?.length;
+  const isOwner = !!user && user.sub === cafe.userId;
 
   const thumbnails = (
     <div style={{ display: 'flex', gap: 8, padding: isDesktop ? '16px 0' : '0 16px 16px', overflowX: 'auto' }}>
@@ -110,7 +111,7 @@ export function CafeDetail({ cafeId, nav, theme, editable = false, isDesktop }) 
     <div style={{ background: theme.bg, minHeight: isDesktop ? '100vh' : '100%' }}>
       <TopBar title="MATCH" theme={theme}
         left={<IconBtn theme={theme} onClick={() => nav('back')}>{icons.back(theme.ink)}</IconBtn>}
-        right={editable ? (
+        right={isOwner ? (
           <button onClick={() => nav('edit', { cafe })} style={{
             padding: '4px 10px', borderRadius: 100,
             border: `0.5px solid ${theme.ink}`, background: 'transparent',
