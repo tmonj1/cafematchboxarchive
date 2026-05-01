@@ -232,3 +232,27 @@ async def test_image_urls_in_list_my_matchboxes(auth_client):
     for item in resp.json():
         assert "imageUrls" in item
         assert len(item["imageUrls"]) == len(item["imageKeys"])
+
+
+@pytest.mark.asyncio
+async def test_image_urls_contain_key(auth_client):
+    """imageUrls の各URLがimageKeysの対応するキーを含むことを検証する。"""
+    import io
+    mb = (await auth_client.post("/api/matchboxes", json={
+        "name": "URL Test", "roman": "UT", "est": "", "loc": "", "desc": "",
+        "tags": [], "acquired": "", "closed": None, "style": 0,
+    })).json()
+    mb_id = mb["matchboxId"]
+
+    fake = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 10)
+    upload_resp = (await auth_client.post(
+        f"/api/matchboxes/{mb_id}/images",
+        files={"file": ("test.jpg", fake, "image/jpeg")},
+    )).json()
+    image_key = upload_resp["key"]
+
+    resp = await auth_client.get(f"/api/matchboxes/{mb_id}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data["imageUrls"]) == 1
+    assert image_key in data["imageUrls"][0]
