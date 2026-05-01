@@ -76,11 +76,14 @@ export function EditScreen({ cafe, nav, theme, isDesktop }) {
     if (!cafe?.matchboxId) return;
     await api.deleteImage(cafe.matchboxId, key);
     setDraft(prev => {
-      const idx = (prev.imageKeys || []).indexOf(key);
+      const imageKeys = prev.imageKeys || [];
+      const imageUrls = prev.imageUrls || [];
+      const idx = imageKeys.indexOf(key);
+      if (idx < 0) return prev;
       return {
         ...prev,
-        imageKeys: (prev.imageKeys || []).filter(k => k !== key),
-        imageUrls: (prev.imageUrls || []).filter((_, i) => i !== idx),
+        imageKeys: imageKeys.filter((_, i) => i !== idx),
+        imageUrls: imageUrls.filter((_, i) => i !== idx),
       };
     });
   };
