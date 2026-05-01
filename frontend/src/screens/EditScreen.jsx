@@ -88,14 +88,22 @@ export function EditScreen({ cafe, nav, theme, isDesktop }) {
     });
   };
 
+  const firstImageUrl = draft.imageUrls?.[0];
   const previewSection = (
     <div style={{ padding: isDesktop ? '0 0 16px' : '16px 60px 8px' }}>
-      {draft.name
-        ? <Matchbox cafe={draft} size="lg" />
-        : <div style={{ aspectRatio: '1 / 1.25', background: theme.panel,
+      {firstImageUrl ? (
+        <div style={{ aspectRatio: '1 / 1.25', borderRadius: 3, overflow: 'hidden' }}>
+          <img src={firstImageUrl} alt={draft.name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        </div>
+      ) : draft.name ? (
+        <Matchbox cafe={draft} size="lg" />
+      ) : (
+        <div style={{ aspectRatio: '1 / 1.25', background: theme.panel,
             border: `1px dashed ${theme.line}`, borderRadius: 3,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: '"Noto Sans JP", sans-serif', fontSize: 11, color: theme.sub }}>プレビュー</div>}
+            fontFamily: '"Noto Sans JP", sans-serif', fontSize: 11, color: theme.sub }}>プレビュー</div>
+      )}
     </div>
   );
 
