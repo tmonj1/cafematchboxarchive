@@ -24,7 +24,7 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from PIL import Image, ImageOps, features as pil_features
+    from PIL import Image, ImageOps
 except ImportError:
     print(f"Pillow がインストールされていません。uv run {__file__} で実行してください。")
     sys.exit(1)
@@ -221,7 +221,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    if not args.dry_run and not pil_features.check("avif"):
+    if not args.dry_run and ".avif" not in Image.registered_extensions():
         print("エラー: PillowがAVIFをサポートしていません（libavif が必要です）。")
         sys.exit(1)
 

@@ -56,11 +56,12 @@ def test_get_image_url_falls_back_to_s3_endpoint(aws_mock, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_upload_image_api_avif(auth_client):
-    mb = (await auth_client.post("/api/matchboxes", json={
+    mb_resp = await auth_client.post("/api/matchboxes", json={
         "name": "AVIF Test", "roman": "AT", "est": "", "loc": "", "desc": "",
         "tags": [], "acquired": "", "closed": None, "style": 0,
-    })).json()
-    mb_id = mb["matchboxId"]
+    })
+    assert mb_resp.status_code == 201
+    mb_id = mb_resp.json()["matchboxId"]
 
     fake_image = io.BytesIO(b"\x00\x00\x00\x1cftyp" + b"\x00" * 100)  # AVIF-like bytes
     resp = await auth_client.post(
