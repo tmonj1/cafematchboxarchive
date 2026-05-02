@@ -2,10 +2,14 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { api } from '../api/client.js';
 
 // JWT ペイロードを手動デコード（検証なし。検証はサーバー側で行う）
+// base64url → base64 変換 + UTF-8 デコードで日本語ニックネームにも対応
 function parseToken(token) {
   try {
     const [, payload] = token.split('.');
-    return JSON.parse(atob(payload));
+    const b64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64 + '='.repeat((4 - b64.length % 4) % 4);
+    const bytes = Uint8Array.from(atob(padded), c => c.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
   } catch {
     return null;
   }

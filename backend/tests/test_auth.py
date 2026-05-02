@@ -72,6 +72,17 @@ async def test_login_success(client):
 
 
 @pytest.mark.asyncio
+async def test_login_jwt_includes_nickname(client):
+    """ログイン時のJWTにnicknameクレームが含まれることを確認する。"""
+    await client.post("/api/auth/register", json={"username": "alice", "password": "pass123"})
+    resp = await client.post("/api/auth/login", json={"username": "alice", "password": "pass123"})
+    assert resp.status_code == 200
+    payload = decode_token(resp.json()["access_token"])
+    assert "nickname" in payload
+    assert payload["nickname"] == ""
+
+
+@pytest.mark.asyncio
 async def test_login_wrong_password(client):
     await client.post("/api/auth/register", json={"username": "alice", "password": "pass123"})
     resp = await client.post("/api/auth/login", json={"username": "alice", "password": "wrong"})
