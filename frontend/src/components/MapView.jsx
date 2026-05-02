@@ -21,8 +21,16 @@ function isInJapan(lat, lng) {
     && lng >= JAPAN_BOUNDS.lngMin && lng <= JAPAN_BOUNDS.lngMax;
 }
 
-// セッション内の住所→座標キャッシュ（同一住所の重複リクエストを防止）
+// セッション内の住所→座標キャッシュ（同一住所の重複リクエストを防止、上限 100 件）
+const MAX_CACHE_SIZE = 100;
 const geocodeCache = new Map();
+
+function setCacheEntry(key, value) {
+  if (geocodeCache.size >= MAX_CACHE_SIZE) {
+    geocodeCache.delete(geocodeCache.keys().next().value);
+  }
+  geocodeCache.set(key, value);
+}
 
 export function MapView({ address, theme }) {
   const containerRef = useRef(null);
@@ -61,7 +69,7 @@ export function MapView({ address, theme }) {
           const lng = parseFloat(results[0].lon);
           if (Number.isFinite(lat) && Number.isFinite(lng)) {
             const found = { lat, lng };
-            geocodeCache.set(address, found);
+            setCacheEntry(address, found);
             setCoords(found);
           }
         }

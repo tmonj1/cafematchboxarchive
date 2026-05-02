@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { TopBar, IconBtn, icons } from '../components/TopBar.jsx';
 import { Matchbox } from '../components/Matchbox.jsx';
 import { UserMenu } from '../components/UserMenu.jsx';
-import { MapView } from '../components/MapView.jsx';
+
+// loc がある場合のみ読み込まれるよう dynamic import（初期バンドルから Leaflet を除外）
+const MapView = lazy(() => import('../components/MapView.jsx').then(m => ({ default: m.MapView })));
 
 function InfoRow({ label, children, theme }) {
   return (
@@ -90,7 +92,7 @@ export function CafeDetail({ cafeId, nav, theme, isDesktop }) {
         </div>
       )}
       {cafe.loc && <InfoRow label="所在地" theme={theme}>{cafe.loc}</InfoRow>}
-      {cafe.loc && <MapView address={cafe.loc} theme={theme} />}
+      {cafe.loc && <Suspense fallback={null}><MapView address={cafe.loc} theme={theme} /></Suspense>}
       {cafe.desc && <InfoRow label="説明" theme={theme}>{cafe.desc}</InfoRow>}
       {cafe.acquired && <InfoRow label="取得時期" theme={theme}>{cafe.acquired}</InfoRow>}
       {cafe.tags?.length > 0 && (
