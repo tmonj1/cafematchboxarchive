@@ -213,7 +213,7 @@ export function EditScreen({ cafe, nav, theme, isDesktop }) {
             {cafe?.ownerNickname
               || user?.nickname
               || user?.displayName
-              || (user?.username && !user.username.includes('@') ? user.username : null)
+              || user?.username
               || 'ユーザー'}
           </div>
         </div>

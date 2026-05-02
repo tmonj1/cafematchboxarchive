@@ -51,6 +51,19 @@ export function AuthProvider({ children }) {
     setUser(parseToken(access_token));
   }, []);
 
+  // displayName クレームがない古いトークンをサイレントに更新する
+  useEffect(() => {
+    const token = localStorage.getItem('cma_token');
+    if (!token) return;
+    const payload = parseToken(token);
+    if (payload && !('displayName' in payload)) {
+      api.updateProfile({}).then(({ access_token }) => {
+        localStorage.setItem('cma_token', access_token);
+        setUser(parseToken(access_token));
+      }).catch(() => {});
+    }
+  }, []);
+
   // 401 レスポンス時に自動ログアウト
   useEffect(() => {
     const handler = () => setUser(null);
