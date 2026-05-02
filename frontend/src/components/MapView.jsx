@@ -24,7 +24,8 @@ function isInJapan(lat, lng) {
 // ジオコーダのベース URL（VITE_NOMINATIM_URL で差し替え可能）
 const NOMINATIM_BASE = import.meta.env.VITE_NOMINATIM_URL ?? 'https://nominatim.openstreetmap.org';
 
-// セッション内の住所→座標キャッシュ（null = 0件ヒット/失敗も記録、上限 100 件）
+// セッション内の住所→座標キャッシュ（null = 正常レスポンスで 0件ヒット を記録、上限 100 件）
+// HTTP エラー・fetch 失敗時はキャッシュしない（一時障害を永続化しない）
 const MAX_CACHE_SIZE = 100;
 const geocodeCache = new Map();
 
