@@ -21,7 +21,10 @@ function isInJapan(lat, lng) {
     && lng >= JAPAN_BOUNDS.lngMin && lng <= JAPAN_BOUNDS.lngMax;
 }
 
-// セッション内の住所→座標キャッシュ（同一住所の重複リクエストを防止、上限 100 件）
+// ジオコーダのベース URL（VITE_NOMINATIM_URL で差し替え可能）
+const NOMINATIM_BASE = import.meta.env.VITE_NOMINATIM_URL ?? 'https://nominatim.openstreetmap.org';
+
+// セッション内の住所→座標キャッシュ（null = 0件ヒット/失敗も記録、上限 100 件）
 const MAX_CACHE_SIZE = 100;
 const geocodeCache = new Map();
 
@@ -39,7 +42,8 @@ export function MapView({ address, theme }) {
 
   // Nominatim でジオコーディング
   useEffect(() => {
-    if (!address) return;
+    const normalized = address?.trim() ?? '';
+    if (!normalized) return;
 
     // 住所変更時に旧マップを破棄してコンテナを再利用できる状態にする
     if (mapRef.current) {
@@ -48,31 +52,37 @@ export function MapView({ address, theme }) {
     }
     setCoords(null);
 
-    // キャッシュヒット時はネットワーク不要
-    const cached = geocodeCache.get(address);
-    if (cached) {
-      setCoords(cached);
+    // キャッシュヒット時はネットワーク不要（null = 0件ヒット済みも対象）
+    if (geocodeCache.has(normalized)) {
+      const cached = geocodeCache.get(normalized);
+      if (cached !== null) setCoords(cached);
       return;
     }
 
     let cancelled = false;
     const controller = new AbortController();
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`;
+    const url = `${NOMINATIM_BASE}/search?q=${encodeURIComponent(normalized)}&format=json&limit=1`;
 
     // ブラウザの fetch では User-Agent は Forbidden header のため設定不可
     fetch(url, { signal: controller.signal })
       .then(r => { if (!r.ok) return undefined; return r.json(); })
       .then(results => {
-        if (!results || cancelled) return;
+        if (cancelled) return;
+        if (!results) {
+          setCacheEntry(normalized, null);
+          return;
+        }
         if (results.length > 0) {
           const lat = parseFloat(results[0].lat);
           const lng = parseFloat(results[0].lon);
           if (Number.isFinite(lat) && Number.isFinite(lng)) {
             const found = { lat, lng };
-            setCacheEntry(address, found);
+            setCacheEntry(normalized, found);
             setCoords(found);
+            return;
           }
         }
+        setCacheEntry(normalized, null);
       })
       .catch(() => {});
 
