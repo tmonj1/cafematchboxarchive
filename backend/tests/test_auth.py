@@ -72,6 +72,17 @@ async def test_login_success(client):
 
 
 @pytest.mark.asyncio
+async def test_login_jwt_includes_nickname(client):
+    """ログイン時のJWTにnicknameクレームが含まれることを確認する。"""
+    await client.post("/api/auth/register", json={"username": "alice", "password": "pass123"})
+    resp = await client.post("/api/auth/login", json={"username": "alice", "password": "pass123"})
+    assert resp.status_code == 200
+    payload = decode_token(resp.json()["access_token"])
+    assert "nickname" in payload
+    assert payload["nickname"] == ""
+
+
+@pytest.mark.asyncio
 async def test_login_wrong_password(client):
     await client.post("/api/auth/register", json={"username": "alice", "password": "pass123"})
     resp = await client.post("/api/auth/login", json={"username": "alice", "password": "wrong"})
@@ -82,6 +93,34 @@ async def test_login_wrong_password(client):
 async def test_delete_account(auth_client):
     resp = await auth_client.delete("/api/auth/account")
     assert resp.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_update_profile_nickname(auth_client):
+    resp = await auth_client.put("/api/auth/account/profile", json={"nickname": "テストニックネーム"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "access_token" in data
+    # JWTにnicknameが含まれることを確認
+    payload = decode_token(data["access_token"])
+    assert payload["nickname"] == "テストニックネーム"
+    # DynamoDBにnicknameが永続化されたことを確認
+    from app.db.users import get_user_by_id
+    user = get_user_by_id(payload["sub"])
+    assert user is not None
+    assert user["nickname"] == "テストニックネーム"
+
+
+@pytest.mark.asyncio
+async def test_update_profile_empty_nickname(auth_client):
+    resp = await auth_client.put("/api/auth/account/profile", json={"nickname": ""})
+    assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_update_profile_nickname_too_long(auth_client):
+    resp = await auth_client.put("/api/auth/account/profile", json={"nickname": "a" * 31})
+    assert resp.status_code == 422
 
 
 def test_get_user_by_email_not_found(aws_mock):

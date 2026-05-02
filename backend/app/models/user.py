@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 
@@ -15,6 +15,7 @@ class UserLoginRequest(BaseModel):
 class UserResponse(BaseModel):
     userId: str
     username: str
+    nickname: Optional[str] = None
     bio: Optional[str] = None
     createdAt: str
 
@@ -22,3 +23,7 @@ class UserResponse(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class UpdateProfileRequest(BaseModel):
+    nickname: Optional[str] = Field(None, max_length=30)
