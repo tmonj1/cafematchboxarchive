@@ -29,7 +29,7 @@ const MAX_CACHE_SIZE = 100;
 const geocodeCache = new Map();
 
 function setCacheEntry(key, value) {
-  if (geocodeCache.size >= MAX_CACHE_SIZE) {
+  if (!geocodeCache.has(key) && geocodeCache.size >= MAX_CACHE_SIZE) {
     geocodeCache.delete(geocodeCache.keys().next().value);
   }
   geocodeCache.set(key, value);
@@ -68,10 +68,7 @@ export function MapView({ address, theme }) {
       .then(r => { if (!r.ok) return undefined; return r.json(); })
       .then(results => {
         if (cancelled) return;
-        if (!results) {
-          setCacheEntry(normalized, null);
-          return;
-        }
+        if (results === undefined) return;  // HTTP エラー時はキャッシュせず終了（一時障害を永続化しない）
         if (results.length > 0) {
           const lat = parseFloat(results[0].lat);
           const lng = parseFloat(results[0].lon);
@@ -82,7 +79,7 @@ export function MapView({ address, theme }) {
             return;
           }
         }
-        setCacheEntry(normalized, null);
+        setCacheEntry(normalized, null);  // 正常レスポンスで 0件ヒットの場合のみネガティブキャッシュ
       })
       .catch(() => {});
 
