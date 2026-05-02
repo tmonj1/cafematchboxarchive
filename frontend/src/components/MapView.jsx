@@ -29,15 +29,19 @@ export function MapView({ address, theme }) {
   // Nominatim でジオコーディング
   useEffect(() => {
     if (!address) return;
+
+    // 住所変更時に旧マップを破棄してコンテナを再利用できる状態にする
+    if (mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+    }
     setCoords(null);
 
     const controller = new AbortController();
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`;
 
-    fetch(url, {
-      signal: controller.signal,
-      headers: { 'User-Agent': 'CafeMatchboxArchive/1.0 (tmonj1@gmail.com)' },
-    })
+    // ブラウザの fetch では User-Agent は Forbidden header のため設定不可
+    fetch(url, { signal: controller.signal })
       .then(r => r.json())
       .then(results => {
         if (results.length > 0) {
@@ -49,27 +53,19 @@ export function MapView({ address, theme }) {
     return () => controller.abort();
   }, [address]);
 
-  // Leaflet マップの初期化・更新
+  // Leaflet マップの初期化（coords が揃ったときに毎回新規作成）
   useEffect(() => {
     if (!coords || !containerRef.current) return;
 
     const { lat, lng } = coords;
     const zoom = isInJapan(lat, lng) ? 13 : 6;
 
-    if (!mapRef.current) {
-      mapRef.current = L.map(containerRef.current, { zoomControl: true, scrollWheelZoom: false });
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 19,
-      }).addTo(mapRef.current);
-    }
-
+    mapRef.current = L.map(containerRef.current, { zoomControl: true, scrollWheelZoom: false });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19,
+    }).addTo(mapRef.current);
     mapRef.current.setView([lat, lng], zoom);
-
-    // 既存のマーカーを削除して再追加
-    mapRef.current.eachLayer(layer => {
-      if (layer instanceof L.Marker) layer.remove();
-    });
     L.marker([lat, lng]).addTo(mapRef.current);
   }, [coords]);
 
@@ -83,14 +79,14 @@ export function MapView({ address, theme }) {
     };
   }, []);
 
-  if (!coords) return null;
-
+  // コンテナは常に描画し coords がない間は非表示（同一 DOM ノードを維持）
   return (
     <div
       ref={containerRef}
       style={{
         marginTop: 10,
         height: 200,
+        display: coords ? 'block' : 'none',
         borderRadius: 4,
         border: `0.5px solid ${theme.line}`,
         overflow: 'hidden',
