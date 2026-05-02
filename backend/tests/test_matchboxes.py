@@ -285,15 +285,15 @@ async def test_owner_nickname_with_nickname_set(auth_client):
 
 
 @pytest.mark.asyncio
-async def test_owner_nickname_no_nickname_shows_anonymous(aws_mock, client):
-    """nickname 未設定の通常ユーザーは 'ユーザー' と表示される（username は公開しない）。"""
+async def test_owner_nickname_fallback_to_username(aws_mock, client):
+    """nickname 未設定の通常ユーザーはメールアドレスでない username にフォールバックする。"""
     user = create_user("normaluser", "hash")
     mb = create_matchbox(
         user_id=user["userId"], name="X", roman="X", est="", loc="", desc="",
         tags=[], acquired="", closed=None, style=0,
     )
     data = (await client.get(f"/api/matchboxes/{mb['matchboxId']}")).json()
-    assert data["ownerNickname"] == "ユーザー"
+    assert data["ownerNickname"] == "normaluser"
 
 
 @pytest.mark.asyncio
@@ -352,7 +352,7 @@ async def test_owner_nickname_in_mine(auth_client):
 
 @pytest.mark.asyncio
 async def test_owner_nickname_email_username_not_exposed(aws_mock, client):
-    """username にメール形式の文字列を使う通常ユーザーも 'ユーザー' と表示され、メールアドレスが露出しない。"""
+    """メール形式の username を使う通常ユーザーは 'ユーザー' と表示され、メールアドレスが露出しない。"""
     user = create_user("user@example.com", "hash")
     mb = create_matchbox(
         user_id=user["userId"], name="E", roman="E", est="", loc="", desc="",
@@ -360,4 +360,4 @@ async def test_owner_nickname_email_username_not_exposed(aws_mock, client):
     )
     data = (await client.get(f"/api/matchboxes/{mb['matchboxId']}")).json()
     assert data["ownerNickname"] == "ユーザー"
-    assert "user@example.com" not in data["ownerNickname"]
+    assert "example.com" not in data["ownerNickname"]

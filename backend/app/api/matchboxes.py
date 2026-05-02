@@ -18,12 +18,16 @@ def _with_urls(mb: dict) -> dict:
 
 
 def _resolve_owner_nickname(user: dict) -> str:
-    """nickname → displayName（OIDCユーザーのみ持つ）の順でフォールバック。
-    username はメールアドレスになり得るため公開しない。"""
+    """nickname → displayName → username（メールアドレス形式でない場合）の順でフォールバック。
+    OIDCユーザーは create_oidc_user で必ず displayName が設定されるため username=email は露出しない。
+    通常ユーザーがメール形式の username を使っている場合のみ「ユーザー」になる。"""
     if user.get("nickname"):
         return user["nickname"]
     if user.get("displayName"):
         return user["displayName"]
+    username = user.get("username") or ""
+    if username and "@" not in username:
+        return username
     return "ユーザー"
 
 

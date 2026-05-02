@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../api/client.js';
 import { TopBar, icons } from '../components/TopBar.jsx';
 import { Matchbox } from '../components/Matchbox.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 
 function Field({ label, req, children, theme }) {
   return (
@@ -22,6 +23,7 @@ const inputStyle = (theme) => ({
 });
 
 export function EditScreen({ cafe, nav, theme, isDesktop }) {
+  const { user } = useAuth();
   const isNew = !cafe;
   const [draft, setDraft] = useState(cafe || {
     name: '', roman: '', est: '', loc: '', desc: '',
@@ -202,12 +204,14 @@ export function EditScreen({ cafe, nav, theme, isDesktop }) {
             color: theme.ink, cursor: 'pointer' }}>追加</button>
         </div>
       </Field>
-      {cafe?.ownerNickname && (
+      {(cafe?.ownerNickname || user?.nickname || user?.username) && (
         <div style={{ marginTop: 20 }}>
           <div style={{ fontFamily: '"Work Sans", sans-serif', fontSize: 9,
             color: theme.sub, letterSpacing: '0.2em', marginBottom: 6 }}>REGISTERED BY</div>
           <div style={{ fontFamily: '"Noto Sans JP", sans-serif', fontSize: 13,
-            color: theme.ink, lineHeight: 1.7 }}>{cafe.ownerNickname}</div>
+            color: theme.ink, lineHeight: 1.7 }}>
+            {cafe?.ownerNickname || user?.nickname || user?.username}
+          </div>
         </div>
       )}
       {!isNew && (
