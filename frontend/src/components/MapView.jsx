@@ -21,6 +21,9 @@ function isInJapan(lat, lng) {
     && lng >= JAPAN_BOUNDS.lngMin && lng <= JAPAN_BOUNDS.lngMax;
 }
 
+// セッション内の住所→座標キャッシュ（同一住所の重複リクエストを防止）
+const geocodeCache = new Map();
+
 export function MapView({ address, theme }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -37,6 +40,14 @@ export function MapView({ address, theme }) {
     }
     setCoords(null);
 
+    // キャッシュヒット時はネットワーク不要
+    const cached = geocodeCache.get(address);
+    if (cached) {
+      setCoords(cached);
+      return;
+    }
+
+    let cancelled = false;
     const controller = new AbortController();
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`;
 
@@ -44,13 +55,19 @@ export function MapView({ address, theme }) {
     fetch(url, { signal: controller.signal })
       .then(r => r.json())
       .then(results => {
+        if (cancelled) return;
         if (results.length > 0) {
-          setCoords({ lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) });
+          const found = { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
+          geocodeCache.set(address, found);
+          setCoords(found);
         }
       })
       .catch(() => {});
 
-    return () => controller.abort();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [address]);
 
   // Leaflet マップの初期化（coords が揃ったときに毎回新規作成）
