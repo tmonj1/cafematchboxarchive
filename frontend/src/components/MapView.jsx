@@ -53,13 +53,17 @@ export function MapView({ address, theme }) {
 
     // ブラウザの fetch では User-Agent は Forbidden header のため設定不可
     fetch(url, { signal: controller.signal })
-      .then(r => r.json())
+      .then(r => { if (!r.ok) return undefined; return r.json(); })
       .then(results => {
-        if (cancelled) return;
+        if (!results || cancelled) return;
         if (results.length > 0) {
-          const found = { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
-          geocodeCache.set(address, found);
-          setCoords(found);
+          const lat = parseFloat(results[0].lat);
+          const lng = parseFloat(results[0].lon);
+          if (Number.isFinite(lat) && Number.isFinite(lng)) {
+            const found = { lat, lng };
+            geocodeCache.set(address, found);
+            setCoords(found);
+          }
         }
       })
       .catch(() => {});
@@ -70,7 +74,7 @@ export function MapView({ address, theme }) {
     };
   }, [address]);
 
-  // Leaflet マップの初期化（coords が揃ったときに毎回新規作成）
+  // Leaflet マップの初期化（クリーンアップで破棄し coords 変化・アンマウント双方に対応）
   useEffect(() => {
     if (!coords || !containerRef.current) return;
 
@@ -84,17 +88,14 @@ export function MapView({ address, theme }) {
     }).addTo(mapRef.current);
     mapRef.current.setView([lat, lng], zoom);
     L.marker([lat, lng]).addTo(mapRef.current);
-  }, [coords]);
 
-  // アンマウント時にマップを破棄
-  useEffect(() => {
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
       }
     };
-  }, []);
+  }, [coords]);
 
   // コンテナは常に描画し coords がない間は非表示（同一 DOM ノードを維持）
   return (
