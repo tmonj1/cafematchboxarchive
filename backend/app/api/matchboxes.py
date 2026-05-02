@@ -1,6 +1,9 @@
 from typing import Optional, List
 from fastapi import APIRouter, HTTPException, Depends
-from app.models.matchbox import MatchboxCreateRequest, MatchboxUpdateRequest, MatchboxResponse
+from app.models.matchbox import (
+    MatchboxCreateRequest, MatchboxUpdateRequest,
+    MatchboxListResponse, MatchboxDetailResponse,
+)
 from app.db import matchboxes as db
 from app.db import users as users_db
 from app.storage.s3 import get_image_url
@@ -15,14 +18,13 @@ def _with_urls(mb: dict) -> dict:
 
 
 def _resolve_owner_nickname(user: dict) -> str:
-    """nickname → displayName（OIDCユーザーのみ持つ）→ username の順でフォールバック。
-    OIDCユーザーは create_oidc_user で必ず displayName が設定されるため、
-    username=email が露出する前に displayName で捕捉される。"""
+    """nickname → displayName（OIDCユーザーのみ持つ）の順でフォールバック。
+    username はメールアドレスになり得るため公開しない。"""
     if user.get("nickname"):
         return user["nickname"]
     if user.get("displayName"):
         return user["displayName"]
-    return user.get("username") or "ユーザー"
+    return "ユーザー"
 
 
 def _with_owner(mb: dict) -> dict:
@@ -31,7 +33,7 @@ def _with_owner(mb: dict) -> dict:
     return mb
 
 
-@router.get("", response_model=List[MatchboxResponse])
+@router.get("", response_model=List[MatchboxListResponse])
 def list_matchboxes(tag: Optional[str] = None, q: Optional[str] = None):
     """全マッチ箱一覧（公開）。tag・q でフィルタ可。"""
     items = db.list_matchboxes()
@@ -48,13 +50,20 @@ def list_matchboxes(tag: Optional[str] = None, q: Optional[str] = None):
     return [_with_urls(m) for m in items]
 
 
-@router.get("/mine", response_model=List[MatchboxResponse])
+@router.get("/mine", response_model=List[MatchboxDetailResponse])
 def list_my_matchboxes(current_user: dict = Depends(get_current_user)):
-    """認証ユーザー自身のマッチ箱一覧。編集画面で ownerNickname を表示するため付与する。"""
-    return [_with_owner(_with_urls(m)) for m in db.list_matchboxes_by_user(current_user["sub"])]
+    """認証ユーザー自身のマッチ箱一覧。ownerNickname を付与する（EditScreen で使用）。"""
+    user = users_db.get_user_by_id(current_user["sub"])
+    owner_nickname = _resolve_owner_nickname(user) if user else "ユーザー"
+    result = []
+    for m in db.list_matchboxes_by_user(current_user["sub"]):
+        m_with_urls = _with_urls(m)
+        m_with_urls["ownerNickname"] = owner_nickname
+        result.append(m_with_urls)
+    return result
 
 
-@router.get("/{matchbox_id}", response_model=MatchboxResponse)
+@router.get("/{matchbox_id}", response_model=MatchboxDetailResponse)
 def get_matchbox(matchbox_id: str):
     mb = db.get_matchbox(matchbox_id)
     if mb is None:
@@ -62,7 +71,7 @@ def get_matchbox(matchbox_id: str):
     return _with_owner(_with_urls(mb))
 
 
-@router.post("", response_model=MatchboxResponse, status_code=201)
+@router.post("", response_model=MatchboxDetailResponse, status_code=201)
 def create_matchbox(body: MatchboxCreateRequest, current_user: dict = Depends(get_current_user)):
     return _with_owner(_with_urls(db.create_matchbox(
         user_id=current_user["sub"],
@@ -72,7 +81,7 @@ def create_matchbox(body: MatchboxCreateRequest, current_user: dict = Depends(ge
     )))
 
 
-@router.put("/{matchbox_id}", response_model=MatchboxResponse)
+@router.put("/{matchbox_id}", response_model=MatchboxDetailResponse)
 def update_matchbox(
     matchbox_id: str,
     body: MatchboxUpdateRequest,
