@@ -169,3 +169,52 @@ def test_link_oidc_provider_rejects_different_sub(aws_mock):
     user = create_oidc_user("eve@example.com", "Eve", "keycloak", "sub-005")
     with pytest.raises(ValueError, match="already linked to a different sub"):
         link_oidc_provider(user["userId"], "keycloak", "sub-999")
+
+
+@pytest.mark.asyncio
+async def test_login_jwt_includes_display_name(client, aws_mock):
+    """login 時の JWT に displayName クレームが含まれることを確認する。
+    通常ユーザーは displayName を持たないので空文字になる。"""
+    await client.post("/api/auth/register", json={"username": "plain", "password": "pass123"})
+    resp = await client.post("/api/auth/login", json={"username": "plain", "password": "pass123"})
+    assert resp.status_code == 200
+    payload = decode_token(resp.json()["access_token"])
+    assert "displayName" in payload
+    assert payload["displayName"] == ""
+
+
+@pytest.mark.asyncio
+async def test_update_profile_preserves_display_name(aws_mock, client):
+    """update_profile 後の JWT に displayName が引き継がれることを確認する。
+    OIDC ユーザーがプロフィール更新後に displayName が失われないこと。"""
+    user = create_oidc_user("oidc@example.com", "OIDC User", "google", "google-sub")
+    from app.auth.jwt import create_token
+    token = create_token({"sub": user["userId"], "username": user["username"],
+                          "nickname": "", "displayName": user.get("displayName", "")})
+    client.headers["Authorization"] = f"Bearer {token}"
+    resp = await client.put("/api/auth/account/profile", json={"nickname": "新ニック"})
+    assert resp.status_code == 200
+    payload = decode_token(resp.json()["access_token"])
+    assert payload["nickname"] == "新ニック"
+    assert payload["displayName"] == "OIDC User"
+
+
+@pytest.mark.asyncio
+async def test_oidc_callback_jwt_includes_display_name(client, aws_mock):
+    """OIDC callback で発行される JWT に displayName が含まれることを確認する。"""
+    from unittest.mock import patch
+    create_oidc_user("oidc2@example.com", "Google User", "google", "google-sub-2")
+    fake_claims = {"sub": "google-sub-2", "email": "oidc2@example.com", "name": "Google User"}
+    with patch("app.api.auth_oidc.oidc_mod.exchange_code", return_value=fake_claims):
+        with patch("app.api.auth_oidc.config.OIDC_PROVIDERS", return_value={
+            "google": {"allowed_redirect_uris": ["http://localhost:5173/oidc/callback"],
+                       "discovery_url": "https://accounts.google.com/.well-known/openid-configuration"}}):
+            resp = await client.post("/api/auth/oidc/callback", json={
+                "code": "dummy", "code_verifier": "dummy",
+                "redirect_uri": "http://localhost:5173/oidc/callback",
+                "provider": "google",
+            })
+    assert resp.status_code == 200
+    payload = decode_token(resp.json()["access_token"])
+    assert "displayName" in payload
+    assert payload["displayName"] == "Google User"
