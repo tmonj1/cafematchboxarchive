@@ -204,13 +204,17 @@ export function EditScreen({ cafe, nav, theme, isDesktop }) {
             color: theme.ink, cursor: 'pointer' }}>追加</button>
         </div>
       </Field>
-      {(cafe?.ownerNickname || user?.nickname || (user?.username && !user.username.includes('@'))) && (
+      {(cafe?.ownerNickname || user) && (
         <div style={{ marginTop: 20 }}>
           <div style={{ fontFamily: '"Work Sans", sans-serif', fontSize: 9,
             color: theme.sub, letterSpacing: '0.2em', marginBottom: 6 }}>REGISTERED BY</div>
           <div style={{ fontFamily: '"Noto Sans JP", sans-serif', fontSize: 13,
             color: theme.ink, lineHeight: 1.7 }}>
-            {cafe?.ownerNickname || user?.nickname || user?.username}
+            {cafe?.ownerNickname
+              || user?.nickname
+              || user?.displayName
+              || (user?.username && !user.username.includes('@') ? user.username : null)
+              || 'ユーザー'}
           </div>
         </div>
       )}
