@@ -34,7 +34,10 @@ def update_profile(body: UpdateProfileRequest, current_user: dict = Depends(get_
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     nickname = body.nickname if body.nickname is not None else user.get("nickname", "")
-    db_users.update_user_profile(user_id, nickname)
+    try:
+        db_users.update_user_profile(user_id, nickname)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="User not found")
     token = create_token({"sub": user_id, "username": user["username"], "nickname": nickname})
     return {"access_token": token, "token_type": "bearer"}
 

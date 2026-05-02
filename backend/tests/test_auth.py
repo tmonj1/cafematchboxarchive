@@ -90,15 +90,26 @@ async def test_update_profile_nickname(auth_client):
     assert resp.status_code == 200
     data = resp.json()
     assert "access_token" in data
-    # 新しいトークンにnicknameが含まれることを確認
+    # JWTにnicknameが含まれることを確認
     payload = decode_token(data["access_token"])
     assert payload["nickname"] == "テストニックネーム"
+    # DynamoDBにnicknameが永続化されたことを確認
+    from app.db.users import get_user_by_id
+    user = get_user_by_id(payload["sub"])
+    assert user is not None
+    assert user["nickname"] == "テストニックネーム"
 
 
 @pytest.mark.asyncio
 async def test_update_profile_empty_nickname(auth_client):
     resp = await auth_client.put("/api/auth/account/profile", json={"nickname": ""})
     assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_update_profile_nickname_too_long(auth_client):
+    resp = await auth_client.put("/api/auth/account/profile", json={"nickname": "a" * 31})
+    assert resp.status_code == 422
 
 
 def test_get_user_by_email_not_found(aws_mock):
