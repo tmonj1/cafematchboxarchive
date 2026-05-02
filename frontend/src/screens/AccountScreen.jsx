@@ -17,13 +17,36 @@ function InfoCard({ label, children, theme }) {
 }
 
 export function AccountScreen({ nav, theme, isDesktop }) {
-  const { user, logout } = useAuth();
+  const { user, logout, updateProfile } = useAuth();
   const [confirm, setConfirm] = useState(false);
+  const [editingNickname, setEditingNickname] = useState(false);
+  const [nicknameInput, setNicknameInput] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleDelete = async () => {
     await api.deleteAccount();
     logout();
     nav('public');
+  };
+
+  const handleEditNickname = () => {
+    setNicknameInput(user?.nickname || '');
+    setError(null);
+    setEditingNickname(true);
+  };
+
+  const handleSaveNickname = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await updateProfile({ nickname: nicknameInput });
+      setEditingNickname(false);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -37,12 +60,60 @@ export function AccountScreen({ nav, theme, isDesktop }) {
           <Identicon seed={user?.username || ''} size={80} />
         </div>
         <div style={{ fontFamily: '"Noto Serif JP", serif', fontSize: 22,
-          color: theme.ink, marginTop: 16, fontWeight: 500 }}>{user?.username}</div>
+          color: theme.ink, marginTop: 16, fontWeight: 500 }}>
+          {user?.nickname || user?.username}
+        </div>
         <div style={{ fontFamily: '"Work Sans", sans-serif', fontSize: 10,
           color: theme.sub, letterSpacing: '0.2em', marginTop: 4 }}>MEMBER</div>
       </div>
 
       <div style={{ padding: '0 16px' }}>
+        <div style={{ padding: '14px 16px', borderRadius: 8, background: theme.panel, marginBottom: 8 }}>
+          <div style={{ fontFamily: '"Work Sans", sans-serif', fontSize: 9,
+            color: theme.sub, letterSpacing: '0.2em', marginBottom: 4 }}>NICKNAME</div>
+          {editingNickname ? (
+            <div>
+              <input
+                value={nicknameInput}
+                onChange={e => setNicknameInput(e.target.value)}
+                maxLength={30}
+                style={{
+                  width: '100%', padding: '6px 0', background: 'transparent',
+                  border: 'none', borderBottom: `1px solid ${theme.accent}`,
+                  fontFamily: '"Noto Sans JP", sans-serif', fontSize: 13,
+                  color: theme.ink, outline: 'none', boxSizing: 'border-box',
+                }}
+              />
+              {error && (
+                <div style={{ fontFamily: '"Noto Sans JP", sans-serif', fontSize: 11,
+                  color: theme.accent, marginTop: 6 }}>{error}</div>
+              )}
+              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                <button onClick={() => setEditingNickname(false)} disabled={saving} style={{
+                  flex: 1, padding: '7px 0', borderRadius: 6, border: `0.5px solid ${theme.line}`,
+                  background: 'transparent', fontFamily: '"Noto Sans JP", sans-serif',
+                  fontSize: 12, color: theme.ink, cursor: 'pointer' }}>キャンセル</button>
+                <button onClick={handleSaveNickname} disabled={saving} style={{
+                  flex: 1, padding: '7px 0', borderRadius: 6, border: 'none',
+                  background: theme.accent, fontFamily: '"Noto Sans JP", sans-serif',
+                  fontSize: 12, color: theme.bg, cursor: 'pointer', fontWeight: 500 }}>
+                  {saving ? '保存中…' : '保存'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontFamily: '"Noto Sans JP", sans-serif', fontSize: 13,
+                color: user?.nickname ? theme.ink : theme.sub, lineHeight: 1.6 }}>
+                {user?.nickname || '未設定'}
+              </div>
+              <button onClick={handleEditNickname} style={{
+                background: 'transparent', border: 'none', padding: '2px 0',
+                fontFamily: '"Work Sans", sans-serif', fontSize: 11,
+                color: theme.accent, cursor: 'pointer', letterSpacing: '0.05em' }}>EDIT</button>
+            </div>
+          )}
+        </div>
         <InfoCard label="ログイン名" theme={theme}>{user?.username}</InfoCard>
         <InfoCard label="パスワード" theme={theme}>••••••••••</InfoCard>
       </div>

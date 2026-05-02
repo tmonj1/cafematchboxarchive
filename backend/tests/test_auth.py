@@ -84,6 +84,26 @@ async def test_delete_account(auth_client):
     assert resp.status_code == 204
 
 
+@pytest.mark.asyncio
+async def test_update_profile_nickname(auth_client):
+    resp = await auth_client.put("/api/auth/account/profile", json={"nickname": "テストニックネーム"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "access_token" in data
+    # 新しいトークンにnicknameが含まれることを確認
+    import base64, json as _json
+    payload_b64 = data["access_token"].split(".")[1]
+    payload_b64 += "=" * (-len(payload_b64) % 4)
+    payload = _json.loads(base64.b64decode(payload_b64))
+    assert payload["nickname"] == "テストニックネーム"
+
+
+@pytest.mark.asyncio
+async def test_update_profile_empty_nickname(auth_client):
+    resp = await auth_client.put("/api/auth/account/profile", json={"nickname": ""})
+    assert resp.status_code == 200
+
+
 def test_get_user_by_email_not_found(aws_mock):
     result = get_user_by_email("nobody@example.com")
     assert result is None

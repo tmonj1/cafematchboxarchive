@@ -13,13 +13,14 @@ def _table():
     return get_dynamodb_resource().Table(config.USERS_TABLE())
 
 
-def create_user(username: str, password_hash: str, bio: str = "") -> dict:
+def create_user(username: str, password_hash: str, bio: str = "", nickname: str = "") -> dict:
     """新規ユーザーを作成して返す。"""
     user = {
         "userId": str(uuid.uuid4()),
         "username": username,
         "passwordHash": password_hash,
         "bio": bio,
+        "nickname": nickname,
         "createdAt": datetime.now(timezone.utc).isoformat(),
     }
     _table().put_item(Item=user)
@@ -85,11 +86,21 @@ def create_oidc_user(email: str, display_name: str, provider: str, sub: str) -> 
         "displayName": display_name,
         "passwordHash": None,
         "bio": "",
+        "nickname": "",
         "oidcProviders": {provider: sub},
         "createdAt": datetime.now(timezone.utc).isoformat(),
     }
     _table().put_item(Item=user)
     return user
+
+
+def update_user_profile(user_id: str, nickname: str) -> None:
+    """ユーザーのnicknameを更新する。"""
+    _table().update_item(
+        Key={"userId": user_id},
+        UpdateExpression="SET nickname = :n",
+        ExpressionAttributeValues={":n": nickname},
+    )
 
 
 def link_oidc_provider(user_id: str, provider: str, sub: str) -> None:

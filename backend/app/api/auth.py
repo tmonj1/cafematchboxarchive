@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends
 from passlib.context import CryptContext
-from app.models.user import UserRegisterRequest, UserLoginRequest, UserResponse, TokenResponse
+from app.models.user import UserRegisterRequest, UserLoginRequest, UserResponse, TokenResponse, UpdateProfileRequest
 from app.db import users as db_users
 from app.db import matchboxes as db_matchboxes
 from app.storage.s3 import delete_image
@@ -23,7 +23,19 @@ def login(body: UserLoginRequest):
     user = db_users.get_user_by_username(body.username)
     if not user or not user.get("passwordHash") or not _pwd.verify(body.password, user["passwordHash"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    token = create_token({"sub": user["userId"], "username": user["username"]})
+    token = create_token({"sub": user["userId"], "username": user["username"], "nickname": user.get("nickname", "")})
+    return {"access_token": token, "token_type": "bearer"}
+
+
+@router.put("/account/profile", response_model=TokenResponse)
+def update_profile(body: UpdateProfileRequest, current_user: dict = Depends(get_current_user)):
+    user_id = current_user["sub"]
+    user = db_users.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    nickname = body.nickname if body.nickname is not None else user.get("nickname", "")
+    db_users.update_user_profile(user_id, nickname)
+    token = create_token({"sub": user_id, "username": user["username"], "nickname": nickname})
     return {"access_token": token, "token_type": "bearer"}
 
 

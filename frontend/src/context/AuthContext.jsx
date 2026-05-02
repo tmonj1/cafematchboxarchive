@@ -41,6 +41,12 @@ export function AuthProvider({ children }) {
     setUser(parseToken(access_token));
   }, []);
 
+  const updateProfile = useCallback(async (data) => {
+    const { access_token } = await api.updateProfile(data);
+    localStorage.setItem('cma_token', access_token);
+    setUser(parseToken(access_token));
+  }, []);
+
   // 401 レスポンス時に自動ログアウト
   useEffect(() => {
     const handler = () => setUser(null);
@@ -49,7 +55,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loginWithOidc }}>
+    <AuthContext.Provider value={{ user, login, register, logout, loginWithOidc, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
