@@ -15,16 +15,14 @@ def _with_urls(mb: dict) -> dict:
 
 
 def _resolve_owner_nickname(user: dict) -> str:
-    """nickname → displayName → username（メール形式でない場合のみ）の順でフォールバック。
-    OIDCユーザーは username=email のため、メール形式は公開しない。"""
+    """nickname → displayName（OIDCユーザーのみ持つ）→ username の順でフォールバック。
+    OIDCユーザーは create_oidc_user で必ず displayName が設定されるため、
+    username=email が露出する前に displayName で捕捉される。"""
     if user.get("nickname"):
         return user["nickname"]
     if user.get("displayName"):
         return user["displayName"]
-    username = user.get("username") or ""
-    if username and "@" not in username:
-        return username
-    return "ユーザー"
+    return user.get("username") or "ユーザー"
 
 
 def _with_owner(mb: dict) -> dict:
@@ -52,8 +50,8 @@ def list_matchboxes(tag: Optional[str] = None, q: Optional[str] = None):
 
 @router.get("/mine", response_model=List[MatchboxResponse])
 def list_my_matchboxes(current_user: dict = Depends(get_current_user)):
-    """認証ユーザー自身のマッチ箱一覧。"""
-    return [_with_urls(m) for m in db.list_matchboxes_by_user(current_user["sub"])]
+    """認証ユーザー自身のマッチ箱一覧。編集画面で ownerNickname を表示するため付与する。"""
+    return [_with_owner(_with_urls(m)) for m in db.list_matchboxes_by_user(current_user["sub"])]
 
 
 @router.get("/{matchbox_id}", response_model=MatchboxResponse)

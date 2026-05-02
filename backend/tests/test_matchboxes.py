@@ -336,3 +336,27 @@ async def test_owner_nickname_not_in_list(auth_client):
     items = (await auth_client.get("/api/matchboxes")).json()
     assert len(items) > 0
     assert items[0].get("ownerNickname") is None
+
+
+@pytest.mark.asyncio
+async def test_owner_nickname_in_mine(auth_client):
+    """マイ一覧API（GET /matchboxes/mine）は ownerNickname を含む（EditScreen で使用）。"""
+    await auth_client.post("/api/matchboxes", json={
+        "name": "M", "roman": "M", "est": "", "loc": "", "desc": "",
+        "tags": [], "acquired": "", "closed": None, "style": 0,
+    })
+    items = (await auth_client.get("/api/matchboxes/mine")).json()
+    assert len(items) > 0
+    assert items[0].get("ownerNickname") is not None
+
+
+@pytest.mark.asyncio
+async def test_owner_nickname_normal_user_with_email_username(aws_mock, client):
+    """通常ユーザーが username にメール形式の文字列を使っていてもそのまま表示する。"""
+    user = create_user("user@example.com", "hash")
+    mb = create_matchbox(
+        user_id=user["userId"], name="E", roman="E", est="", loc="", desc="",
+        tags=[], acquired="", closed=None, style=0,
+    )
+    data = (await client.get(f"/api/matchboxes/{mb['matchboxId']}")).json()
+    assert data["ownerNickname"] == "user@example.com"
