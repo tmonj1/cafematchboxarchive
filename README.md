@@ -8,6 +8,7 @@
 - **マイギャラリー**: 自分のコレクションを管理
 - **マッチ箱の登録・編集**: 画像アップロード、タグ付け、喫茶店情報の入力
 - **検索・タグフィルタ**: キーワードやタグで絞り込み
+- **地図表示**: 喫茶店の所在地住所を Nominatim API でジオコーディングし、OpenStreetMap で地図を表示
 - **ユーザー認証**: アカウント登録・ログイン（パスワード認証 / OIDC ソーシャルログイン）
 
 ## 技術スタック
@@ -18,6 +19,8 @@
 | バックエンド | FastAPI (Python) |
 | データベース | Amazon DynamoDB (ローカル開発: DynamoDB Local) |
 | ストレージ | Amazon S3 (ローカル開発: MinIO) |
+| 地図表示 | Leaflet + OpenStreetMap |
+| ジオコーディング | [Nominatim API](https://nominatim.org/) (OpenStreetMap) |
 | 開発環境 | Docker Compose |
 
 ## 前提条件
@@ -202,6 +205,16 @@ uv run scripts/process_matchbox_photos.py --max-count 10
 | `--dry-run` | — | 保存せず処理対象のみ表示 |
 
 出力ファイル名は `YYYYMMDD_HHMMSS_<拡張子を除いた元ファイル名>_<幅>x<高さ>_<UUID8桁>.webp` 形式で、既存ファイルは上書きせずスキップします。同名の `.png` が残っている場合は注意メッセージを表示します。
+
+## 外部サービス
+
+### Nominatim (ジオコーディング)
+
+喫茶店の所在地住所を緯度・経度に変換するために [Nominatim API](https://nominatim.openstreetmap.org/) を使用しています。詳細画面の「所在地」フィールドに住所が入力されていると、その直下に地図が表示されます。
+
+- 日本国内の住所はズームレベル 13、海外はズームレベル 6 で表示
+- ジオコーディングに失敗した場合は地図を非表示にして静かに処理
+- Nominatim は [利用ポリシー](https://operations.osmfoundation.org/policies/nominatim/) により **1秒に1リクエスト以下** のレート制限があります。大量の住所を一括変換する用途には向いていません
 
 ## ライセンス
 
