@@ -91,10 +91,7 @@ async def test_update_profile_nickname(auth_client):
     data = resp.json()
     assert "access_token" in data
     # 新しいトークンにnicknameが含まれることを確認
-    import base64, json as _json
-    payload_b64 = data["access_token"].split(".")[1]
-    payload_b64 += "=" * (-len(payload_b64) % 4)
-    payload = _json.loads(base64.b64decode(payload_b64))
+    payload = decode_token(data["access_token"])
     assert payload["nickname"] == "テストニックネーム"
 
 

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 
@@ -26,4 +26,4 @@ class TokenResponse(BaseModel):
 
 
 class UpdateProfileRequest(BaseModel):
-    nickname: Optional[str] = None
+    nickname: Optional[str] = Field(None, max_length=30)
