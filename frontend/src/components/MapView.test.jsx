@@ -59,11 +59,10 @@ describe('MapView', () => {
     }));
     const { container } = render(<MapView address="東京都港区_test1" theme={theme} />);
     await waitFor(() => {
-      expect(container.firstChild.style.display).toBe('block');
+      const instance = L.map.mock.results[0]?.value;
+      expect(instance?.setView).toHaveBeenCalledWith([35.6585, 139.7454], 13);
     });
-    expect(L.map).toHaveBeenCalled();
-    const mockMapInstance = L.map.mock.results[0].value;
-    expect(mockMapInstance.setView).toHaveBeenCalledWith([35.6585, 139.7454], 13);
+    expect(container.firstChild.style.display).toBe('block');
   });
 
   it('海外の座標でジオコーディング成功時は zoom 6 で地図を表示する', async () => {
@@ -73,9 +72,9 @@ describe('MapView', () => {
     }));
     const { container } = render(<MapView address="Paris_France_test1" theme={theme} />);
     await waitFor(() => {
-      expect(container.firstChild.style.display).toBe('block');
+      const instance = L.map.mock.results[0]?.value;
+      expect(instance?.setView).toHaveBeenCalledWith([48.8566, 2.3522], 6);
     });
-    const mockMapInstance = L.map.mock.results[0].value;
-    expect(mockMapInstance.setView).toHaveBeenCalledWith([48.8566, 2.3522], 6);
+    expect(container.firstChild.style.display).toBe('block');
   });
 });
