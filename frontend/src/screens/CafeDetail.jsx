@@ -78,6 +78,9 @@ export function CafeDetail({ cafeId, nav, theme, isDesktop }) {
     </div>
   );
 
+  // 空白のみの loc は未設定扱いにする
+  const loc = cafe.loc?.trim() || null;
+
   const infoBlock = (
     <div style={{ padding: isDesktop ? 0 : '8px 20px 40px' }}>
       <div style={{ fontFamily: '"Work Sans", sans-serif', fontSize: 10,
@@ -91,8 +94,8 @@ export function CafeDetail({ cafeId, nav, theme, isDesktop }) {
           {cafe.closed} 閉店
         </div>
       )}
-      {cafe.loc && <InfoRow label="所在地" theme={theme}>{cafe.loc}</InfoRow>}
-      {cafe.loc && <Suspense fallback={null}><MapView address={cafe.loc} theme={theme} /></Suspense>}
+      {loc && <InfoRow label="所在地" theme={theme}>{loc}</InfoRow>}
+      {loc && <Suspense fallback={null}><MapView address={loc} theme={theme} /></Suspense>}
       {cafe.desc && <InfoRow label="説明" theme={theme}>{cafe.desc}</InfoRow>}
       {cafe.acquired && <InfoRow label="取得時期" theme={theme}>{cafe.acquired}</InfoRow>}
       {cafe.tags?.length > 0 && (

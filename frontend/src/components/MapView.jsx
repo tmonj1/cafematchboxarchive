@@ -43,14 +43,15 @@ export function MapView({ address, theme }) {
   // Nominatim でジオコーディング
   useEffect(() => {
     const normalized = address?.trim() ?? '';
-    if (!normalized) return;
 
-    // 住所変更時に旧マップを破棄してコンテナを再利用できる状態にする
+    // address が空/空白に変わった場合も旧マップ・coords を確実にクリアする
     if (mapRef.current) {
       mapRef.current.remove();
       mapRef.current = null;
     }
     setCoords(null);
+
+    if (!normalized) return;
 
     // キャッシュヒット時はネットワーク不要（null = 0件ヒット済みも対象）
     if (geocodeCache.has(normalized)) {
