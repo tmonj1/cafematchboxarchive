@@ -204,7 +204,7 @@ export function EditScreen({ cafe, nav, theme, isDesktop }) {
             color: theme.ink, cursor: 'pointer' }}>追加</button>
         </div>
       </Field>
-      {(cafe?.ownerNickname || user?.nickname || user?.username) && (
+      {(cafe?.ownerNickname || user?.nickname || (user?.username && !user.username.includes('@'))) && (
         <div style={{ marginTop: 20 }}>
           <div style={{ fontFamily: '"Work Sans", sans-serif', fontSize: 9,
             color: theme.sub, letterSpacing: '0.2em', marginBottom: 6 }}>REGISTERED BY</div>
