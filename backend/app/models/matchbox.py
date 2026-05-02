@@ -29,7 +29,7 @@ class MatchboxUpdateRequest(BaseModel):
 class MatchboxResponse(BaseModel):
     matchboxId: str
     userId: str
-    ownerNickname: str
+    ownerNickname: Optional[str] = None
     name: str
     roman: str
     est: str

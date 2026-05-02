@@ -14,12 +14,22 @@ def _with_urls(mb: dict) -> dict:
     return mb
 
 
+def _resolve_owner_nickname(user: dict) -> str:
+    """nickname → displayName → username（メール形式でない場合のみ）の順でフォールバック。
+    OIDCユーザーは username=email のため、メール形式は公開しない。"""
+    if user.get("nickname"):
+        return user["nickname"]
+    if user.get("displayName"):
+        return user["displayName"]
+    username = user.get("username") or ""
+    if username and "@" not in username:
+        return username
+    return "ユーザー"
+
+
 def _with_owner(mb: dict) -> dict:
     user = users_db.get_user_by_id(mb["userId"])
-    if user:
-        mb["ownerNickname"] = user.get("nickname") or user.get("username") or user["userId"]
-    else:
-        mb["ownerNickname"] = mb["userId"]
+    mb["ownerNickname"] = _resolve_owner_nickname(user) if user else "ユーザー"
     return mb
 
 
@@ -37,13 +47,13 @@ def list_matchboxes(tag: Optional[str] = None, q: Optional[str] = None):
             or q_lower in m.get("loc", "").lower()
             or q_lower in m.get("roman", "").lower()
         ]
-    return [_with_owner(_with_urls(m)) for m in items]
+    return [_with_urls(m) for m in items]
 
 
 @router.get("/mine", response_model=List[MatchboxResponse])
 def list_my_matchboxes(current_user: dict = Depends(get_current_user)):
     """認証ユーザー自身のマッチ箱一覧。"""
-    return [_with_owner(_with_urls(m)) for m in db.list_matchboxes_by_user(current_user["sub"])]
+    return [_with_urls(m) for m in db.list_matchboxes_by_user(current_user["sub"])]
 
 
 @router.get("/{matchbox_id}", response_model=MatchboxResponse)
