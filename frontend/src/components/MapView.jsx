@@ -71,6 +71,7 @@ export function MapView({ address, theme }) {
       .then(results => {
         if (cancelled) return;
         if (results === undefined) return;  // HTTP エラー時はキャッシュせず終了（一時障害を永続化しない）
+        if (!Array.isArray(results)) return;  // 予期しないレスポンス形式はキャッシュせず終了
         if (results.length > 0) {
           const lat = parseFloat(results[0].lat);
           const lng = parseFloat(results[0].lon);
@@ -80,8 +81,9 @@ export function MapView({ address, theme }) {
             setCoords(found);
             return;
           }
+          return;  // 座標が不正な場合はキャッシュせず静かに終了
         }
-        setCacheEntry(normalized, null);  // 正常レスポンスで 0件ヒットの場合のみネガティブキャッシュ
+        setCacheEntry(normalized, null);  // 正常な配列で length===0 の場合のみネガティブキャッシュ
       })
       .catch(() => {});
 

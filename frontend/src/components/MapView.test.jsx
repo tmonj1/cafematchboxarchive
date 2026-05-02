@@ -38,9 +38,8 @@ describe('MapView', () => {
   it('HTTP エラー時は地図を表示しない', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
     const { container } = render(<MapView address="東京都渋谷区" theme={theme} />);
-    await waitFor(() => {
-      expect(container.firstChild.style.display).toBe('none');
-    });
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    expect(container.firstChild.style.display).toBe('none');
   });
 
   it('0件ヒット時は地図を表示しない', async () => {
@@ -49,9 +48,8 @@ describe('MapView', () => {
       json: async () => [],
     }));
     const { container } = render(<MapView address="存在しない架空の住所zzz999" theme={theme} />);
-    await waitFor(() => {
-      expect(container.firstChild.style.display).toBe('none');
-    });
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    expect(container.firstChild.style.display).toBe('none');
   });
 
   it('日本の座標でジオコーディング成功時は zoom 13 で地図を表示する', async () => {
@@ -64,7 +62,8 @@ describe('MapView', () => {
       expect(container.firstChild.style.display).toBe('block');
     });
     expect(L.map).toHaveBeenCalled();
-    expect(L.map().setView).toHaveBeenCalledWith([35.6585, 139.7454], 13);
+    const mockMapInstance = L.map.mock.results[0].value;
+    expect(mockMapInstance.setView).toHaveBeenCalledWith([35.6585, 139.7454], 13);
   });
 
   it('海外の座標でジオコーディング成功時は zoom 6 で地図を表示する', async () => {
@@ -76,6 +75,7 @@ describe('MapView', () => {
     await waitFor(() => {
       expect(container.firstChild.style.display).toBe('block');
     });
-    expect(L.map().setView).toHaveBeenCalledWith([48.8566, 2.3522], 6);
+    const mockMapInstance = L.map.mock.results[0].value;
+    expect(mockMapInstance.setView).toHaveBeenCalledWith([48.8566, 2.3522], 6);
   });
 });
