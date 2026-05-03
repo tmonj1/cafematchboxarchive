@@ -42,6 +42,7 @@ export const api = {
     request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
   deleteAccount: () =>
     request('/auth/account', { method: 'DELETE' }),
+  refreshToken: () => request('/auth/account/token'),
   updateProfile: (data) =>
     request('/auth/account/profile', { method: 'PUT', body: JSON.stringify(data) }),
   oidcCallback: (code, codeVerifier, redirectUri, provider) =>

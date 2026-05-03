@@ -23,7 +23,20 @@ def login(body: UserLoginRequest):
     user = db_users.get_user_by_username(body.username)
     if not user or not user.get("passwordHash") or not _pwd.verify(body.password, user["passwordHash"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    token = create_token({"sub": user["userId"], "username": user["username"], "nickname": user.get("nickname", "")})
+    token = create_token({"sub": user["userId"], "username": user["username"],
+                          "nickname": user.get("nickname", ""), "displayName": user.get("displayName", "")})
+    return {"access_token": token, "token_type": "bearer"}
+
+
+@router.get("/account/token", response_model=TokenResponse)
+def refresh_token(current_user: dict = Depends(get_current_user)):
+    """トークンを再発行する（DynamoDB 書き込みなし）。古いトークンへの displayName クレーム付与に使用する。"""
+    user_id = current_user["sub"]
+    user = db_users.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    token = create_token({"sub": user_id, "username": user["username"],
+                          "nickname": user.get("nickname", ""), "displayName": user.get("displayName", "")})
     return {"access_token": token, "token_type": "bearer"}
 
 
@@ -38,7 +51,8 @@ def update_profile(body: UpdateProfileRequest, current_user: dict = Depends(get_
         db_users.update_user_profile(user_id, nickname)
     except ValueError:
         raise HTTPException(status_code=404, detail="User not found")
-    token = create_token({"sub": user_id, "username": user["username"], "nickname": nickname})
+    token = create_token({"sub": user_id, "username": user["username"],
+                          "nickname": nickname, "displayName": user.get("displayName", "")})
     return {"access_token": token, "token_type": "bearer"}
 
 

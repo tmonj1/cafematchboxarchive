@@ -26,7 +26,7 @@ class MatchboxUpdateRequest(BaseModel):
     style: Optional[int] = None
 
 
-class MatchboxResponse(BaseModel):
+class _MatchboxBase(BaseModel):
     matchboxId: str
     userId: str
     name: str
@@ -42,3 +42,13 @@ class MatchboxResponse(BaseModel):
     imageUrls: List[str] = Field(default_factory=list)
     createdAt: str
     updatedAt: str
+
+
+class MatchboxListResponse(_MatchboxBase):
+    """一覧API用レスポンス。ownerNickname を含まない。"""
+    pass
+
+
+class MatchboxDetailResponse(_MatchboxBase):
+    """詳細・作成・更新API用レスポンス。ownerNickname を含む。"""
+    ownerNickname: str

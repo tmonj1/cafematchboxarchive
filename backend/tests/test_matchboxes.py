@@ -4,6 +4,7 @@ from app.db.matchboxes import (
     list_matchboxes_by_user, update_matchbox, delete_matchbox,
     add_image_key, remove_image_key,
 )
+from app.db.users import create_user, create_oidc_user
 
 
 @pytest.fixture
@@ -87,7 +88,7 @@ async def test_list_matchboxes_public(client):
 
 
 @pytest.mark.asyncio
-async def test_create_matchbox(auth_client):
+async def test_create_matchbox_api(auth_client):
     resp = await auth_client.post("/api/matchboxes", json={
         "name": "純喫茶 テスト", "roman": "TEST", "est": "1965",
         "loc": "東京都", "desc": "説明", "tags": ["純喫茶"], "acquired": "1990年",
@@ -267,3 +268,97 @@ async def test_image_urls_contain_key(auth_client):
     target_mine = next(m for m in mine_data if m["matchboxId"] == mb_id)
     assert len(target_mine["imageUrls"]) == 1
     assert image_key in target_mine["imageUrls"][0]
+
+
+# --- ownerNickname のテスト ---
+
+@pytest.mark.asyncio
+async def test_owner_nickname_with_nickname_set(auth_client):
+    """nickname 設定済みユーザーのマッチ箱では ownerNickname に nickname が入る。"""
+    await auth_client.put("/api/auth/account/profile", json={"nickname": "テストニック"})
+    created = (await auth_client.post("/api/matchboxes", json={
+        "name": "N", "roman": "N", "est": "", "loc": "", "desc": "",
+        "tags": [], "acquired": "", "closed": None, "style": 0,
+    })).json()
+    data = (await auth_client.get(f"/api/matchboxes/{created['matchboxId']}")).json()
+    assert data["ownerNickname"] == "テストニック"
+
+
+@pytest.mark.asyncio
+async def test_owner_nickname_fallback_to_username(aws_mock, client):
+    """nickname 未設定の通常ユーザーはメールアドレスでない username にフォールバックする。"""
+    user = create_user("normaluser", "hash")
+    mb = create_matchbox(
+        user_id=user["userId"], name="X", roman="X", est="", loc="", desc="",
+        tags=[], acquired="", closed=None, style=0,
+    )
+    data = (await client.get(f"/api/matchboxes/{mb['matchboxId']}")).json()
+    assert data["ownerNickname"] == "normaluser"
+
+
+@pytest.mark.asyncio
+async def test_owner_nickname_oidc_user_no_email_leak(aws_mock, client):
+    """OIDCユーザー（username=email）は nickname 未設定時に displayName を使い、
+    メールアドレスを公開 API から返さない。"""
+    user = create_oidc_user(
+        email="secret@example.com",
+        display_name="Google User",
+        provider="google",
+        sub="google-sub-123",
+    )
+    mb = create_matchbox(
+        user_id=user["userId"], name="Y", roman="Y", est="", loc="", desc="",
+        tags=[], acquired="", closed=None, style=0,
+    )
+    data = (await client.get(f"/api/matchboxes/{mb['matchboxId']}")).json()
+    assert data["ownerNickname"] == "Google User"
+    assert "secret@example.com" not in data["ownerNickname"]
+
+
+@pytest.mark.asyncio
+async def test_owner_nickname_user_not_found(aws_mock, client):
+    """登録ユーザーが存在しない場合（データ不整合）は '&#12518;&#12540;&#12470;&#12540;' を返す。"""
+    mb = create_matchbox(
+        user_id="ghost-user-id", name="Z", roman="Z", est="", loc="", desc="",
+        tags=[], acquired="", closed=None, style=0,
+    )
+    data = (await client.get(f"/api/matchboxes/{mb['matchboxId']}")).json()
+    assert data["ownerNickname"] == "ユーザー"
+
+
+@pytest.mark.asyncio
+async def test_owner_nickname_not_in_list(auth_client):
+    """一覧API（GET /matchboxes）は ownerNickname を含まない（N+1 回避）。"""
+    await auth_client.post("/api/matchboxes", json={
+        "name": "L", "roman": "L", "est": "", "loc": "", "desc": "",
+        "tags": [], "acquired": "", "closed": None, "style": 0,
+    })
+    items = (await auth_client.get("/api/matchboxes")).json()
+    assert len(items) > 0
+    assert items[0].get("ownerNickname") is None
+
+
+@pytest.mark.asyncio
+async def test_owner_nickname_in_mine(auth_client):
+    """マイ一覧API（GET /matchboxes/mine）は ownerNickname を含む（EditScreen で使用）。"""
+    await auth_client.post("/api/matchboxes", json={
+        "name": "M", "roman": "M", "est": "", "loc": "", "desc": "",
+        "tags": [], "acquired": "", "closed": None, "style": 0,
+    })
+    items = (await auth_client.get("/api/matchboxes/mine")).json()
+    assert len(items) > 0
+    assert items[0].get("ownerNickname") is not None
+
+
+@pytest.mark.asyncio
+async def test_owner_nickname_username_with_at_sign(aws_mock, client):
+    """displayName を持たない通常ユーザーは、username に @ が含まれていても username がそのまま表示される。
+    foo@bar のような有効なユーザー名を誤って隠さないために @ での形式判定は行わない。
+    OIDCユーザー（displayName あり）はこの分岐には到達しないため、メール露出は起きない。"""
+    user = create_user("user@example.com", "hash")
+    mb = create_matchbox(
+        user_id=user["userId"], name="E", roman="E", est="", loc="", desc="",
+        tags=[], acquired="", closed=None, style=0,
+    )
+    data = (await client.get(f"/api/matchboxes/{mb['matchboxId']}")).json()
+    assert data["ownerNickname"] == "user@example.com"

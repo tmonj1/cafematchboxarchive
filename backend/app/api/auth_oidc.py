@@ -72,5 +72,6 @@ def oidc_callback(body: OidcCallbackRequest):
             db_users.link_oidc_provider(existing["userId"], body.provider, sub)
             user = existing
 
-    token = create_token({"sub": user["userId"], "username": user["username"], "nickname": user.get("nickname", "")})
+    token = create_token({"sub": user["userId"], "username": user["username"],
+                          "nickname": user.get("nickname", ""), "displayName": user.get("displayName", "")})
     return {"access_token": token, "token_type": "bearer"}

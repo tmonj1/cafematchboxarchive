@@ -111,6 +111,9 @@ export function CafeDetail({ cafeId, nav, theme, isDesktop }) {
           </div>
         </div>
       )}
+      {cafe.ownerNickname && (
+        <InfoRow label="登録者" theme={theme}>{cafe.ownerNickname}</InfoRow>
+      )}
     </div>
   );
 
