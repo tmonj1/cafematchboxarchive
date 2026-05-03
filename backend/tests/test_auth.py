@@ -200,6 +200,32 @@ async def test_update_profile_preserves_display_name(aws_mock, client):
 
 
 @pytest.mark.asyncio
+async def test_refresh_token_includes_display_name(auth_client):
+    """GET /auth/account/token がDynamoDB書き込みなしでdisplayNameクレーム入りJWTを再発行する。"""
+    resp = await auth_client.get("/api/auth/account/token")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "access_token" in data
+    payload = decode_token(data["access_token"])
+    assert "displayName" in payload
+    assert "nickname" in payload
+
+
+@pytest.mark.asyncio
+async def test_refresh_token_oidc_preserves_display_name(aws_mock, client):
+    """OIDCユーザーで GET /auth/account/token を呼ぶと displayName が保持される。"""
+    user = create_oidc_user("oidc3@example.com", "OIDC Display", "google", "google-sub-3")
+    from app.auth.jwt import create_token
+    token = create_token({"sub": user["userId"], "username": user["username"],
+                          "nickname": "", "displayName": user.get("displayName", "")})
+    client.headers["Authorization"] = f"Bearer {token}"
+    resp = await client.get("/api/auth/account/token")
+    assert resp.status_code == 200
+    payload = decode_token(resp.json()["access_token"])
+    assert payload["displayName"] == "OIDC Display"
+
+
+@pytest.mark.asyncio
 async def test_oidc_callback_jwt_includes_display_name(client, aws_mock):
     """OIDC callback で発行される JWT に displayName が含まれることを確認する。"""
     from unittest.mock import patch
